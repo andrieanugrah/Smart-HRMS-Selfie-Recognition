@@ -1,0 +1,22 @@
+{
+  "name": "smart-hrms",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev:web",
+    "dev:web": "cd apps/web && node \"../../node_modules/next/dist/bin/next\" dev --port 3000",
+    "dev:server": "cd apps/server && npx tsx watch src/index.ts",
+    "build": "node node_modules/typescript/lib/tsc.js -p packages/shared && node node_modules/next/dist/bin/next build apps/web && node node_modules/typescript/lib/tsc.js -p apps/server",
+    "build:shared": "node node_modules/typescript/lib/tsc.js -p packages/shared",
+    "build:web": "node node_modules/next/dist/bin/next build apps/web",
+    "build:server": "node node_modules/typescript/lib/tsc.js -p apps/server",
+    "lint": "npm run lint -w apps/web"
+  },
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  }
+}

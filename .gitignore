@@ -1,0 +1,21 @@
+node_modules/
+.next/
+dist/
+.env
+.env.local
+*.log
+.DS_Store
+
+# Temporary scripts & HTML dumps
+*.ps1
+dump.html
+
+# IDE & AI Tool folders
+.claude/
+.clinerules/
+.commandcode/
+.cursor/
+.opencode/
+.windsurf/
+.zcode/
+
