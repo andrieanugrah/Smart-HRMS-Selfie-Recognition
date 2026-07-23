@@ -5,7 +5,7 @@
 ---
 
 <a name="english"></a>
-## 🇬🇧 English
+## EN English
 
 A web-based Human Resource Management System (HRMS) featuring facial recognition attendance, office geolocation radius validation, and real-time leave and overtime management.
 
