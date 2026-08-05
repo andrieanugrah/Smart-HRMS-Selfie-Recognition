@@ -84,7 +84,7 @@ async function seed() {
       continue;
     }
 
-    console.log(`[ok] ${u.role}: ${u.email} / ${u.password}`);
+    console.log(`[ok] ${u.role}: ${u.email} (seated)`);
   }
 }
 
