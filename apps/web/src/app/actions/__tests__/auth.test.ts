@@ -10,6 +10,7 @@ const ACTIONS_DIR = path.resolve(import.meta.dirname, '..');
 const FILENAMES = [
   'attendance.ts', 'face.ts', 'leave.ts', 'overtime.ts', 'employees.ts',
   'compliance.ts', 'notifications.ts', 'profile.ts', 'images.ts', 'dashboard.ts',
+  'announcement.ts', 'payroll.ts', 'reimbursement.ts', 'shift.ts',
 ];
 
 function extractFunctions(source: string): string[] {
