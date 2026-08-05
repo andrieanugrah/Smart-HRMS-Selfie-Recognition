@@ -1,5 +1,6 @@
 'use server';
 
+import path from 'node:path';
 import { getSupabaseAdmin, requireUser, requireRole } from './_utils';
 import { decryptImage } from '@/lib/crypto/image-crypto';
 
@@ -22,18 +23,24 @@ export async function getDecryptedImageUrl(
 
   const match = url.match(/\/storage\/v1\/object\/public\/([^/]+)\/(.+)$/);
   if (!match) return url;
-  const [, bucket, path] = match;
-  const pathUserId = path.split('/')[0];
+  const [, bucket, rawPath] = match;
+  // Normalize path so traversal segments (e.g. u1/../u2) resolve to the real owner.
+  const normalizedPath = path.posix.normalize(rawPath).replace(/\/{2,}/g, '/').replace(/^\//, '');
+  if (normalizedPath.startsWith('..') || normalizedPath.includes('/../')) {
+    console.warn('[getDecryptedImageUrl] path traversal rejected: user=%s path=%s', user.id, rawPath);
+    return null;
+  }
+  const pathUserId = normalizedPath.split('/')[0];
   const isOwner = pathUserId === user.id;
   const isPrivileged = user.role === 'hrd' || user.role === 'admin';
   if (!isOwner && !isPrivileged) {
-    console.warn('[getDecryptedImageUrl] forbidden: user=%s role=%s path=%s', user.id, user.role, path);
+    console.warn('[getDecryptedImageUrl] forbidden: user=%s role=%s path=%s', user.id, user.role, normalizedPath);
     return null;
   }
 
   try {
     const supabase = getSupabaseAdmin();
-    const { data, error } = await supabase.storage.from(bucket).download(path);
+    const { data, error } = await supabase.storage.from(bucket).download(normalizedPath);
     if (error || !data) {
       console.warn('[getDecryptedImageUrl] download failed:', error?.message);
       return null;

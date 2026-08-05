@@ -78,6 +78,15 @@ describe('getDecryptedImageUrl authorization', () => {
     await expect(getDecryptedImageUrl(SELFIE_URL)).resolves.toBeNull();
   });
 
+  it('rejects path traversal that passes split check but resolves to victim', async () => {
+    mocks.requireUser.mockResolvedValue({ id: 'u1', role: 'employee' });
+    const traversalUrl =
+      'https://example.supabase.co/storage/v1/object/public/selfies/u1/../u2/2025-01-01_123456.bin';
+    await expect(getDecryptedImageUrl(traversalUrl)).resolves.toBeNull();
+    // download should not be invoked for a forbidden path
+    expect(mocks.download).not.toHaveBeenCalled();
+  });
+
   it.each(['hrd', 'admin'])('allows %s to decrypt any avatar', async (role) => {
     mocks.requireUser.mockResolvedValue({ id: 'u2', role });
     await expect(getDecryptedImageUrl(AVATAR_URL)).resolves.toMatch(
