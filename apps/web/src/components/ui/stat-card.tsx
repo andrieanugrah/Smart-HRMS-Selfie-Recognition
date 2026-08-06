@@ -14,36 +14,37 @@ export interface StatCardProps {
   trendValue?: string;
   accent?: 'primary' | 'success' | 'warning' | 'danger' | 'info';
   className?: string;
+  onClick?: () => void;
 }
 
 const accentMap: Record<NonNullable<StatCardProps['accent']>, { soft: string; chip: string; ring: string; chart: string }> = {
   primary: {
-    soft: 'from-primary/15 via-primary/5 to-transparent',
-    chip: 'bg-gradient-to-br from-primary to-primary-light text-white',
-    ring: 'ring-primary/40',
-    chart: 'from-primary/30 to-transparent',
+    soft: 'from-accent/15 via-accent/5 to-transparent',
+    chip: 'bg-gradient-to-br from-primary to-primary-dark text-white',
+    ring: 'ring-accent/40',
+    chart: 'from-accent/35 to-transparent',
   },
   success: {
     soft: 'from-success/15 via-success/5 to-transparent',
-    chip: 'bg-success text-white',
+    chip: 'bg-success text-success-foreground',
     ring: 'ring-success/40',
     chart: 'from-success/30 to-transparent',
   },
   warning: {
     soft: 'from-warning/15 via-warning/5 to-transparent',
-    chip: 'bg-gradient-to-br from-warning to-amber-400 text-white',
+    chip: 'bg-warning text-warning-foreground',
     ring: 'ring-warning/40',
     chart: 'from-warning/30 to-transparent',
   },
   danger: {
     soft: 'from-danger/15 via-danger/5 to-transparent',
-    chip: 'bg-gradient-to-br from-danger to-rose-500 text-white',
+    chip: 'bg-danger text-danger-foreground',
     ring: 'ring-danger/40',
     chart: 'from-danger/30 to-transparent',
   },
   info: {
     soft: 'from-info/15 via-info/5 to-transparent',
-    chip: 'bg-gradient-to-br from-info to-blue-500 text-white',
+    chip: 'bg-info text-info-foreground',
     ring: 'ring-info/40',
     chart: 'from-info/30 to-transparent',
   },
@@ -64,11 +65,29 @@ export function StatCard({
   trendValue,
   accent = 'primary',
   className,
+  onClick,
 }: StatCardProps) {
   const palette = accentMap[accent];
   return (
     <div
-      className={cn('animate-in fade-in-0 slide-in-from-bottom-2', className)}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={
+        onClick
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onClick();
+              }
+            }
+          : undefined
+      }
+      className={cn(
+        'animate-in fade-in-0 slide-in-from-bottom-2',
+        onClick && 'cursor-pointer transition-transform hover:-translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-2xl',
+        className
+      )}
       style={{ animationFillMode: 'backwards', animationDuration: '280ms' }}
     >
       <CardElevated className="relative overflow-hidden h-full">

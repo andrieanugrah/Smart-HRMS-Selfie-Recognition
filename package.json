@@ -13,10 +13,16 @@
     "build:shared": "node node_modules/typescript/lib/tsc.js -p packages/shared",
     "build:web": "node node_modules/next/dist/bin/next build apps/web",
     "build:server": "node node_modules/typescript/lib/tsc.js -p apps/server",
-    "lint": "npm run lint -w apps/web"
+    "seed:users": "npm run seed:users -w apps/server",
+    "lint": "node node_modules/typescript/lib/tsc.js -p apps/web/tsconfig.json --noEmit",
+    "test": "npm run test -w apps/web",
+    "test:coverage": "npm run test:coverage -w apps/web"
   },
   "dependencies": {
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.10"
   }
 }

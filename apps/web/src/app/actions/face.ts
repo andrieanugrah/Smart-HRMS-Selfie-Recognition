@@ -11,13 +11,14 @@ import {
   getSupabase,
   type ActionResult,
 } from './_utils';
+import { logAudit } from './_audit';
 
 const registerFaceSchema = z.object({
   descriptors: z
     .array(z.array(z.number()).length(128))
     .min(1, 'Minimal 1 sample wajah')
     .max(5, 'Maksimal 5 sample'),
-  image_urls: z.array(z.string()).optional(),
+  image_urls: z.array(z.string().url().max(2048)).optional(),
 });
 
 function averageDescriptor(samples: number[][]): number[] {
@@ -41,43 +42,31 @@ export async function registerFace(
     const avgDescriptor = averageDescriptor(data.descriptors);
     const imageUrl = data.image_urls?.length ? data.image_urls[0] : null;
 
-    const { data: existing } = await supabase
+    // ponytail: upsert avoids race between concurrent face re-registration attempts
+    const { data: result, error } = await supabase
       .from('face_descriptors')
+      .upsert({
+        user_id: user.id,
+        descriptor: avgDescriptor,
+        image_url: imageUrl,
+        is_active: true,
+      }, { onConflict: 'user_id' })
       .select('id')
-      .eq('user_id', user.id)
-      .maybeSingle();
+      .single();
 
-    let result;
-    if (existing) {
-      const r = await supabase
-        .from('face_descriptors')
-        .update({
-          descriptor: avgDescriptor,
-          image_url: imageUrl,
-          is_active: true,
-        })
-        .eq('user_id', user.id)
-        .select('id')
-        .single();
-      result = r;
-    } else {
-      const r = await supabase
-        .from('face_descriptors')
-        .insert({
-          user_id: user.id,
-          descriptor: avgDescriptor,
-          image_url: imageUrl,
-          is_active: true,
-        })
-        .select('id')
-        .single();
-      result = r;
-    }
+    if (error) return fail(error.message);
 
-    if (result.error) return fail(result.error.message);
+    void logAudit({
+      actor_id: user.id,
+      actor_email: user.email,
+      actor_role: user.role,
+      action: 'register',
+      resource_type: 'face_descriptor',
+      resource_id: result.id,
+    });
 
     revalidatePath('/[portal]/profile', 'page');
-    return ok({ id: result.data.id });
+    return ok({ id: result.id });
   } catch (e) {
     return handleError(e);
   }
@@ -92,6 +81,16 @@ export async function deleteMyFace(): Promise<ActionResult> {
       .update({ is_active: false })
       .eq('user_id', user.id);
     if (error) return fail(error.message);
+
+    void logAudit({
+      actor_id: user.id,
+      actor_email: user.email,
+      actor_role: user.role,
+      action: 'delete',
+      resource_type: 'face_descriptor',
+      details: { target_user_id: user.id },
+    });
+
     revalidatePath('/[portal]/profile', 'page');
     return ok({ deleted: true });
   } catch (e) {
@@ -109,6 +108,16 @@ export async function deleteEmployeeFace(userId: string): Promise<ActionResult> 
       .update({ is_active: false })
       .eq('user_id', userId);
     if (error) return fail(error.message);
+
+    void logAudit({
+      actor_id: me.id,
+      actor_email: me.email,
+      actor_role: me.role,
+      action: 'delete',
+      resource_type: 'face_descriptor',
+      details: { target_user_id: userId },
+    });
+
     revalidatePath('/[portal]/employees', 'page');
     return ok({ deleted: true });
   } catch (e) {

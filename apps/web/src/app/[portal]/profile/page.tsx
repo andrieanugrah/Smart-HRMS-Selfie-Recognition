@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { User, Shield, Mail, Camera, CalendarDays, Phone, Building2, Briefcase, CheckCircle2, Edit2, Save, X, Loader2, ImagePlus } from 'lucide-react';
+import { User, Shield, Mail, Camera, CalendarDays, Phone, Building2, Briefcase, CheckCircle2, Edit2, Save, X, Loader2, ImagePlus, Download, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { PageTransition } from '@/components/shared/page-transition';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +18,8 @@ import {
   uploadMyAvatar,
 } from '@/app/actions/profile';
 import { getMyFaceDescriptor } from '@/app/actions/attendance';
+import { getMyDecryptedAvatar } from '@/app/actions/images';
+import { exportMyData, requestAccountDeletion } from '@/app/actions/compliance';
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -33,6 +35,10 @@ export default function ProfilePage() {
   const [newPassword, setNewPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteReason, setDeleteReason] = useState('');
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const [form, setForm] = useState({
     full_name: '',
@@ -43,12 +49,14 @@ export default function ProfilePage() {
 
   async function load() {
     setLoading(true);
-    const [data, faceData] = await Promise.all([
+    const [data, faceData, avatarSrc] = await Promise.all([
       getMyProfile(),
       getMyFaceDescriptor(),
+      getMyDecryptedAvatar(),
     ]);
     setProfile(data);
     setFaceRegistered(!!faceData?.descriptor);
+    setAvatarUrl(avatarSrc);
     if (data) {
       setForm({
         full_name: data.full_name ?? '',
@@ -111,6 +119,40 @@ export default function ProfilePage() {
       toast.success('Password berhasil diperbarui');
       setCurrentPassword('');
       setNewPassword('');
+    } else {
+      toast.error(res.error);
+    }
+  }
+
+  async function handleExportData() {
+    setExporting(true);
+    const res = await exportMyData();
+    setExporting(false);
+    if (res.ok) {
+      const blob = new Blob([JSON.stringify(res.data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `hrms-data-export-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Data berhasil diekspor');
+    } else {
+      toast.error(res.error);
+    }
+  }
+
+  async function handleRequestDeletion() {
+    if (!deleteReason || deleteReason.length < 3) {
+      toast.error('Alasan penghapusan minimal 3 karakter');
+      return;
+    }
+    setDeleting(true);
+    const res = await requestAccountDeletion(deleteReason);
+    setDeleting(false);
+    if (res.ok) {
+      toast.success('Permintaan penghapusan dikirim. HRD akan memproses.');
+      setDeleteReason('');
     } else {
       toast.error(res.error);
     }
@@ -217,7 +259,7 @@ export default function ProfilePage() {
                 className="relative animate-in zoom-in-95"
                 style={{ animationFillMode: 'backwards', animationDuration: '400ms' }}
               >
-                <Avatar name={profile.full_name} size="xl" src={profile.avatar_url} />
+                <Avatar name={profile.full_name} size="xl" src={avatarUrl ?? undefined} />
                 <button
                   type="button"
                   aria-label="Ubah foto profil"
@@ -361,7 +403,7 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
-        <Card>
+<Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Camera className="w-5 h-5 text-primary" />
@@ -384,6 +426,49 @@ export default function ProfilePage() {
               Pastikan pencahayaan cukup.
             </p>
             <FaceRegister isRegistered={faceRegistered} onChange={load} />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="w-5 h-5 text-primary" />
+              Privasi & Data
+            </CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Hak atas data pribadi sesuai UU PDP No. 27/2022.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-medium mb-1">Ekspor Data Saya</p>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Unduh seluruh data pribadi Anda (profil, presensi, cuti, lembur, notifikasi).
+                </p>
+                <Button variant="outline" onClick={handleExportData} disabled={exporting} className="gap-2">
+                  {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                  {exporting ? 'Menyiapkan...' : 'Ekspor Data'}
+                </Button>
+              </div>
+              <div className="border-t pt-4">
+                <p className="text-sm font-medium mb-1">Hapus Akun</p>
+                <p className="text-xs text-muted-foreground mb-2">
+                  Ajukan permintaan penghapusan akun dan seluruh data Anda. HRD akan memprosesnya.
+                </p>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Input
+                    value={deleteReason}
+                    onChange={(e) => setDeleteReason(e.target.value)}
+                    placeholder="Alasan penghapusan (minimal 3 karakter)"
+                  />
+                  <Button variant="destructive" onClick={handleRequestDeletion} disabled={deleting} className="gap-2">
+                    {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                    Ajukan Hapus
+                  </Button>
+                </div>
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

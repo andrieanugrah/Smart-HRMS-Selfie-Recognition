@@ -13,6 +13,8 @@ import {
 } from './_utils';
 import { emitToHRD, emitToUser } from './_events';
 import { FACE_MATCH_THRESHOLD_DEFAULT, getTodayDateString, getHourInTimezone } from 'shared';
+import { encryptImage, dataUrlToBuffer } from '@/lib/crypto/image-crypto';
+import { getUserShiftForDate } from './shift';
 
 const checkInSchema = z.object({
   descriptor: z.array(z.number()).length(128),
@@ -93,7 +95,7 @@ export async function checkIn(
     const match = distance < threshold;
     if (!match) return fail(`Wajah tidak cocok (jarak ${distance.toFixed(3)} > threshold ${threshold}). Coba lagi.`);
 
-    let inOffice = true;
+    let inOffice = false;
     if (data.location) {
       const distMeters = haversineDistance(
         { lat: OFFICE_LAT, lng: OFFICE_LNG },
@@ -104,35 +106,38 @@ export async function checkIn(
 
     const supabase = await getSupabase();
     const today = getTodayDateString();
-    const nowIso = new Date().toISOString();
-    const hour = getHourInTimezone();
-    const status: 'present' | 'late' = hour >= 9 ? 'late' : 'present';
+    const userShift = await getUserShiftForDate(user.id, today);
+    const [startH, startM] = (userShift.start_time || '08:00:00').split(':').map(Number);
+    const graceMin = userShift.grace_period_minutes ?? 15;
+    const now = new Date();
+    const nowIso = now.toISOString();
+    const currentMinOfDay = now.getHours() * 60 + now.getMinutes();
+    const shiftMinStartWithGrace = (startH * 60 + (startM || 0)) + graceMin;
+    const status: 'present' | 'late' = currentMinOfDay > shiftMinStartWithGrace ? 'late' : 'present';
 
     let finalSelfieUrl = data.selfie_url ?? null;
-    if (data.imageDataUrl && data.imageDataUrl.startsWith('data:image/')) {
+    let selfieEncrypted = false;
+    if (data.imageDataUrl && data.imageDataUrl.startsWith('data:image/') && !data.imageDataUrl.startsWith('data:image/svg+xml')) {
       try {
-        const matches = data.imageDataUrl.match(/^data:image\/([a-zA-Z]+);base64,(.+)$/);
-        if (matches) {
-          const ext = matches[1] === 'jpeg' ? 'jpg' : matches[1];
-          const base64Data = matches[2];
-          const buffer = Buffer.from(base64Data, 'base64');
-          const filePath = `${user.id}/${today}_${Date.now()}.${ext}`;
+        const buffer = dataUrlToBuffer(data.imageDataUrl);
+        const encryptedBuffer = encryptImage(buffer);
+        const filePath = `${user.id}/${today}_${Date.now()}.bin`;
 
-          const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await supabase.storage
+          .from('selfies')
+          .upload(filePath, encryptedBuffer, {
+            contentType: 'application/octet-stream',
+            upsert: true,
+          });
+
+        if (!uploadError) {
+          const { data: publicUrlData } = supabase.storage
             .from('selfies')
-            .upload(filePath, buffer, {
-              contentType: `image/${matches[1]}`,
-              upsert: true,
-            });
-
-          if (!uploadError) {
-            const { data: publicUrlData } = supabase.storage
-              .from('selfies')
-              .getPublicUrl(filePath);
-            finalSelfieUrl = publicUrlData.publicUrl;
-          } else {
-            console.warn('[checkIn] selfie upload warning:', uploadError.message);
-          }
+            .getPublicUrl(filePath);
+          finalSelfieUrl = publicUrlData.publicUrl;
+          selfieEncrypted = true;
+        } else {
+          console.warn('[checkIn] selfie upload warning:', uploadError.message);
         }
       } catch (err) {
         console.warn('[checkIn] selfie upload failed:', err);
@@ -148,6 +153,7 @@ export async function checkIn(
           check_in: nowIso,
           status,
           selfie_url: finalSelfieUrl,
+          selfie_encrypted: selfieEncrypted,
           selfie_match: match,
           confidence: 1 - distance,
           location: data.location ?? null,
@@ -181,23 +187,47 @@ export async function checkIn(
   }
 }
 
-export async function checkOut(): Promise<ActionResult<{ id: string }>> {
+export async function checkOut(
+  input: z.infer<typeof checkInSchema>
+): Promise<ActionResult<{ id: string; status: string; selfie_match: boolean; distance: number; in_office: boolean }>> {
   try {
     const user = await requireUser();
+    const data = checkInSchema.parse(input);
+
+    const stored = await getMyFaceDescriptor();
+    if (!stored?.descriptor) {
+      return fail('Wajah belum terdaftar. Silakan daftarkan wajah di halaman Profil terlebih dahulu.');
+    }
+
+    const distance = euclidean(data.descriptor, stored.descriptor as number[]);
+    const threshold = Number(process.env.FACE_MATCH_THRESHOLD ?? FACE_MATCH_THRESHOLD_DEFAULT);
+    const match = distance < threshold;
+    if (!match) return fail(`Wajah tidak cocok (jarak ${distance.toFixed(3)} > threshold ${threshold}). Coba lagi.`);
+
+    let inOffice = false;
+    if (data.location) {
+      const distMeters = haversineDistance(
+        { lat: OFFICE_LAT, lng: OFFICE_LNG },
+        data.location
+      );
+      inOffice = distMeters <= OFFICE_RADIUS;
+    }
+
     const supabase = await getSupabase();
     const today = getTodayDateString();
     const nowIso = new Date().toISOString();
 
     const { data: existing } = await supabase
       .from('attendance')
-      .select('id, check_in')
+      .select('id, check_in, check_out, status')
       .eq('user_id', user.id)
       .eq('date', today)
       .maybeSingle();
 
     if (!existing) return fail('Belum ada absen masuk hari ini');
+    if (existing.check_out) return fail('Sudah absen pulang hari ini');
 
-    const { data, error } = await supabase
+    const { data: updated, error } = await supabase
       .from('attendance')
       .update({ check_out: nowIso, updated_at: nowIso })
       .eq('id', existing.id)
@@ -208,7 +238,13 @@ export async function checkOut(): Promise<ActionResult<{ id: string }>> {
 
     emitToHRD('attendance:checkout', { user_id: user.id, user_name: user.name });
     revalidatePath('/[portal]/attendance', 'page');
-    return ok({ id: data.id });
+    return ok({ 
+      id: updated.id,
+      status: existing.status,
+      selfie_match: match,
+      distance,
+      in_office: inOffice,
+    });
   } catch (e) {
     return handleError(e);
   }
@@ -216,6 +252,8 @@ export async function checkOut(): Promise<ActionResult<{ id: string }>> {
 
 export async function listAttendanceForHRD(opts: {
   date?: string;
+  from?: string;
+  to?: string;
   status?: string;
   search?: string;
 } = {}) {
@@ -229,6 +267,8 @@ export async function listAttendanceForHRD(opts: {
     .order('check_in', { ascending: false });
 
   if (opts.date) q = q.eq('date', opts.date);
+  if (opts.from) q = q.gte('date', opts.from);
+  if (opts.to) q = q.lte('date', opts.to);
   if (opts.status && opts.status !== 'all') q = q.eq('status', opts.status);
 
   const { data, error } = await q;

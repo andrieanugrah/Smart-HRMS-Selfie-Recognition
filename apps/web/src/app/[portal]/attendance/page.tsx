@@ -17,6 +17,7 @@ import {
   getOfficeRadius,
 } from '@/lib/hooks/use-geolocation';
 import { compareDescriptors } from '@/lib/face-api/compare-face';
+import { SelfieThumbnail } from '@/components/face/selfie-thumbnail';
 import {
   checkIn,
   checkOut,
@@ -195,11 +196,67 @@ function EmployeeAttendance() {
     }
   }
 
-  async function handleCheckOut() {
+  async function handleCheckOut(data: {
+    descriptor: Float32Array;
+    imageDataUrl: string;
+  }) {
     setCheckingIn(true);
+
+    const overallTimer = window.setTimeout(() => {
+      if (aliveRef.current) {
+        toast.error('Check-out memakan waktu terlalu lama. Coba lagi.');
+        setCheckingIn(false);
+      }
+    }, 20_000);
+
     try {
-      const result = await withTimeout(checkOut(), 10_000, 'check-out');
+      const stored = await withTimeout(getMyFaceDescriptor(), 8_000, 'get-descriptor').catch(
+        () => null
+      );
       if (!aliveRef.current) return;
+      if (!stored?.descriptor) {
+        toast.error('Wajah belum terdaftar. Silakan daftarkan di halaman Profil.');
+        return;
+      }
+
+      const comparison = compareDescriptors(
+        Array.from(data.descriptor),
+        stored.descriptor as number[]
+      );
+      if (!comparison.match) {
+        toast.error(`Wajah tidak cocok (jarak: ${comparison.distance.toFixed(3)}). Coba lagi.`);
+        return;
+      }
+
+      const pos = await getCurrentPositionWithTimeout(6000);
+      if (!aliveRef.current) return;
+
+      let location: { lat: number; lng: number } | null = null;
+      if (pos) {
+        location = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        const dist = distanceFromOffice(location);
+        if (!isWithinOfficeRadius(location)) {
+          toast.warning(
+            `Anda ${Math.round(dist)}m dari kantor. Check-out tetap dicatat.`
+          );
+        }
+      } else {
+        toast.warning('Lokasi tidak tersedia. Check-out dicatat tanpa verifikasi lokasi.');
+      }
+
+      const result = await withTimeout(
+        checkOut({
+          descriptor: Array.from(data.descriptor),
+          confidence: 1 - comparison.distance,
+          selfie_url: null,
+          imageDataUrl: data.imageDataUrl,
+          location,
+        }),
+        12_000,
+        'check-out'
+      );
+      if (!aliveRef.current) return;
+
       if (result.ok) {
         toast.success('Check-out berhasil!');
         setTodayRecord((prev: any) =>
@@ -207,6 +264,7 @@ function EmployeeAttendance() {
             ? { ...prev, check_out: new Date().toISOString() }
             : { check_out: new Date().toISOString() }
         );
+        setShowCamera(false);
         void loadToday().catch(() => undefined);
       } else {
         toast.error(result.error);
@@ -215,6 +273,7 @@ function EmployeeAttendance() {
       if (!aliveRef.current) return;
       toast.error(/timed out/.test(e?.message ?? '') ? 'Koneksi lambat, coba lagi.' : e?.message);
     } finally {
+      window.clearTimeout(overallTimer);
       if (aliveRef.current) setCheckingIn(false);
     }
   }
@@ -292,8 +351,8 @@ function EmployeeAttendance() {
               </div>
             ) : showCamera ? (
               <FaceCapture
-                onCapture={handleFaceCapture}
-                captureButtonLabel="Ambil & Absen"
+                onCapture={hasCheckedIn ? handleCheckOut : handleFaceCapture}
+                captureButtonLabel={hasCheckedIn ? "Ambil & Check-out" : "Ambil & Absen"}
                 autoStart
                 processing={checkingIn}
               />
@@ -301,11 +360,11 @@ function EmployeeAttendance() {
               <Button
                 size="lg"
                 className="w-full gap-2"
-                onClick={handleCheckOut}
+                onClick={() => setShowCamera(true)}
                 disabled={checkingIn}
               >
                 {checkingIn ? <Loader2 className="w-5 h-5 animate-spin" /> : <LogOut className="w-5 h-5" />}
-                {checkingIn ? 'Memproses...' : 'Check-out (Pulang)'}
+                {checkingIn ? 'Memproses...' : 'Mulai Check-out (Pulang)'}
               </Button>
             ) : (
               <Button
@@ -410,10 +469,10 @@ function HRDAttendance() {
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3 min-w-0 flex-1">
                       {rec.selfie_url ? (
-                        <img
-                          src={rec.selfie_url}
-                          alt="Selfie"
-                          className="w-10 h-10 rounded-full object-cover border border-border"
+                        <SelfieThumbnail
+                          url={rec.selfie_url}
+                          encrypted={rec.selfie_encrypted}
+                          name={rec.profiles?.full_name ?? '-'}
                         />
                       ) : (
                         <Avatar name={rec.profiles?.full_name ?? '-'} size="sm" />

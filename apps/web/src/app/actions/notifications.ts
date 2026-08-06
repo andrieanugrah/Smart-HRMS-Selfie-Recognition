@@ -20,18 +20,19 @@ export async function getMyNotificationsBundle() {
       .eq('is_read', false),
   ]);
   const items = listResult.data ?? [];
-  const unread = items.reduce((acc, n) => acc + (n.is_read ? 0 : 1), 0) || (countResult.count ?? 0);
+  const unread = countResult.count ?? 0;
   return { items, unread };
 }
 
 export async function markNotificationRead(id: string): Promise<ActionResult> {
   try {
-    await requireUser();
+    const user = await requireUser();
     const supabase = await getSupabase();
     const { error } = await supabase
       .from('notifications')
       .update({ is_read: true })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('user_id', user.id);
     if (error) return fail(error.message);
     revalidatePath('/[portal]', 'layout');
     return ok({ id });

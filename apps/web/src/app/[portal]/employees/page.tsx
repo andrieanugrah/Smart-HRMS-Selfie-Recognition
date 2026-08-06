@@ -193,7 +193,7 @@ export default function EmployeesPage() {
                     <TableRow key={emp.id}>
                       <TableCell>
                         <div className="flex items-center gap-2.5">
-                          <Avatar name={emp.full_name} size="sm" src={emp.avatar_url} />
+                          <Avatar name={emp.full_name} size="sm" />
                           <div className="min-w-0">
                             <p className="font-medium text-sm truncate">{emp.full_name}</p>
                             <p className="text-xs text-muted-foreground truncate">{emp.email}</p>

@@ -1,12 +1,18 @@
 import type { Metadata } from 'next';
-import { Plus_Jakarta_Sans } from 'next/font/google';
+import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/providers/providers';
 
-const plusJakarta = Plus_Jakarta_Sans({
+const geist = Geist({
   subsets: ['latin'],
   display: 'swap',
-  variable: '--font-jakarta',
+  variable: '--font-geist',
+});
+
+const geistMono = Geist_Mono({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-geist-mono',
 });
 
 export const metadata: Metadata = {
@@ -20,8 +26,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id" suppressHydrationWarning className={plusJakarta.variable}>
-      <body className={`${plusJakarta.className} bg-background text-foreground`}>
+    <html lang="id" suppressHydrationWarning className={`${geist.variable} ${geistMono.variable}`}>
+      <body className={`${geist.className} ${geistMono.variable} bg-background text-foreground`}>
         <Providers>{children}</Providers>
       </body>
     </html>

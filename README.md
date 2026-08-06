@@ -54,7 +54,14 @@ smart-hrms/
    cp .env.example apps/web/.env.local
    ```
 3. **Setup Database & Storage**: Run [database/schema.sql](database/schema.sql) in Supabase SQL Editor.
-4. **Run Application**
+4. **Create Demo Accounts**
+   ```bash
+   npm run seed:users
+   ```
+   This creates:
+   - `hr@company.com` / `123456` (HRD)
+   - `employee@company.com` / `123456` (Employee)
+5. **Run Application**
    ```bash
    npm run dev
    ```
@@ -97,7 +104,14 @@ Aplikasi Sistem Informasi SDM (HRMS) berbasis web dengan fitur presensi wajah (F
    cp .env.example apps/web/.env.local
    ```
 3. **Setup Database & Storage**: Jalankan [database/schema.sql](database/schema.sql) pada Supabase SQL Editor.
-4. **Menjalankan Dev Server**
+4. **Buat Akun Demo**
+   ```bash
+   npm run seed:users
+   ```
+   Akun yang dibuat:
+   - `hr@company.com` / `123456` (HRD)
+   - `employee@company.com` / `123456` (Karyawan)
+5. **Menjalankan Dev Server**
    ```bash
    npm run dev
    ```

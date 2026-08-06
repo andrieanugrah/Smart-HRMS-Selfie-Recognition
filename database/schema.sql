@@ -12,7 +12,10 @@ CREATE TABLE IF NOT EXISTS profiles (
   department  TEXT,
   position    TEXT,
   avatar_url  TEXT,
+  avatar_encrypted BOOLEAN DEFAULT false,
   leave_quota INTEGER DEFAULT 12,
+  annual_leave_quota INTEGER DEFAULT 12,
+  used_leave_days INTEGER DEFAULT 0,
   is_active   BOOLEAN DEFAULT true,
   created_at  TIMESTAMPTZ DEFAULT now(),
   updated_at  TIMESTAMPTZ DEFAULT now()
@@ -37,6 +40,7 @@ CREATE TABLE IF NOT EXISTS attendance (
   check_in      TIMESTAMPTZ NOT NULL DEFAULT now(),
   check_out     TIMESTAMPTZ,
   selfie_url    TEXT,
+  selfie_encrypted BOOLEAN DEFAULT false,
   selfie_match  BOOLEAN,
   confidence    REAL,
   status        TEXT NOT NULL DEFAULT 'present'
@@ -225,16 +229,136 @@ CREATE POLICY notifications_self ON notifications
 -- Idempotent: aman dijalankan berulang.
 -- See: https://supabase.com/docs/guides/auth/row-level-security
 
--- 7. SUPABASE STORAGE BUCKET 'selfies'
+-- 7. AUDIT LOGS
+CREATE TABLE IF NOT EXISTS audit_logs (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  actor_id      UUID NOT NULL REFERENCES profiles(id) ON DELETE SET NULL,
+  actor_email   TEXT,
+  actor_role    TEXT,
+  action        TEXT NOT NULL,
+  resource_type TEXT NOT NULL,
+  resource_id   TEXT,
+  details       JSONB DEFAULT '{}',
+  ip_address    INET,
+  user_agent    TEXT,
+  created_at    TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_audit_logs_actor ON audit_logs(actor_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_resource ON audit_logs(resource_type, resource_id);
+CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC);
+
+-- 8. SUPABASE STORAGE BUCKET 'selfies'
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('selfies', 'selfies', true)
 ON CONFLICT (id) DO NOTHING;
 
-CREATE POLICY "Public Read Access for Selfies"
+CREATE POLICY "Private Read Own Selfies"
 ON storage.objects FOR SELECT
-USING (bucket_id = 'selfies');
+USING (
+  bucket_id = 'selfies'
+  AND (
+    (storage.foldername(name))[1] = auth.uid()::text
+    OR coalesce(auth.jwt() -> 'app_metadata' ->> 'role', '') IN ('hrd','admin')
+  )
+);
 
-CREATE POLICY "Authenticated Users Upload Selfies"
+CREATE POLICY "Authenticated Users Upload Own Selfies"
 ON storage.objects FOR INSERT
-WITH CHECK (bucket_id = 'selfies' AND auth.role() = 'authenticated');
+WITH CHECK (
+  bucket_id = 'selfies'
+  AND auth.role() = 'authenticated'
+  AND (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- 8. SUPABASE STORAGE BUCKET 'leave_attachments'
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('leave_attachments', 'leave_attachments', true)
+ON CONFLICT (id) DO NOTHING;
+
+CREATE POLICY "Private Read Own Leave Attachments"
+ON storage.objects FOR SELECT
+USING (
+  bucket_id = 'leave_attachments'
+  AND (
+    (storage.foldername(name))[1] = auth.uid()::text
+    OR coalesce(auth.jwt() -> 'app_metadata' ->> 'role', '') IN ('hrd','admin')
+  )
+);
+
+CREATE POLICY "Authenticated Users Upload Own Leave Attachments"
+ON storage.objects FOR INSERT
+WITH CHECK (
+  bucket_id = 'leave_attachments'
+  AND auth.role() = 'authenticated'
+  AND (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- 9. SUPABASE STORAGE BUCKET 'avatars'
+INSERT INTO storage.buckets (id, name, public)
+VALUES ('avatars', 'avatars', true)
+ON CONFLICT (id) DO NOTHING;
+
+CREATE POLICY "Private Read Own Avatars"
+ON storage.objects FOR SELECT
+USING (
+  bucket_id = 'avatars'
+  AND (
+    (storage.foldername(name))[1] = auth.uid()::text
+    OR coalesce(auth.jwt() -> 'app_metadata' ->> 'role', '') IN ('hrd','admin')
+  )
+);
+
+CREATE POLICY "Authenticated Users Upload Own Avatars"
+ON storage.objects FOR INSERT
+WITH CHECK (
+  bucket_id = 'avatars'
+  AND auth.role() = 'authenticated'
+  AND (storage.foldername(name))[1] = auth.uid()::text
+);
+
+-- 9. HOLIDAYS (Libur Nasional & Cuti Bersama)
+CREATE TABLE IF NOT EXISTS holidays (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  date        DATE NOT NULL UNIQUE,
+  name        TEXT NOT NULL,
+  type        TEXT NOT NULL CHECK (type IN ('national', 'company_leave')),
+  description TEXT,
+  created_at  TIMESTAMPTZ DEFAULT now()
+);
+
+ALTER TABLE holidays ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS holidays_read ON holidays;
+CREATE POLICY holidays_read ON holidays
+  FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS holidays_hrd_modify ON holidays;
+CREATE POLICY holidays_hrd_modify ON holidays
+  FOR ALL USING (
+    coalesce(auth.jwt() -> 'app_metadata' ->> 'role', '') IN ('hrd','admin')
+  ) WITH CHECK (
+    coalesce(auth.jwt() -> 'app_metadata' ->> 'role', '') IN ('hrd','admin')
+  );
+
+-- Initial 2026 Indonesian National Holidays & Cuti Bersama Seed
+INSERT INTO holidays (date, name, type, description) VALUES
+  ('2026-01-01', 'Tahun Baru 2026 Masehi', 'national', 'Libur Nasional'),
+  ('2026-01-16', 'Isra Mikraj Nabi Muhammad SAW', 'national', 'Libur Nasional'),
+  ('2026-02-17', 'Tahun Baru Imlek 2577 Kongzili', 'national', 'Libur Nasional'),
+  ('2026-03-19', 'Hari Suci Nyepi (Tahun Baru Saka 1948)', 'national', 'Libur Nasional'),
+  ('2026-03-20', 'Hari Raya Idul Fitri 1447 Hijriah', 'national', 'Libur Nasional'),
+  ('2026-03-21', 'Hari Raya Idul Fitri 1447 Hijriah (Hari Kedua)', 'national', 'Libur Nasional'),
+  ('2026-03-23', 'Cuti Bersama Idul Fitri 1447 H', 'company_leave', 'Cuti Bersama Perusahaan'),
+  ('2026-04-03', 'Wafat Yesus Kristus', 'national', 'Libur Nasional'),
+  ('2026-05-01', 'Hari Buruh Internasional', 'national', 'Libur Nasional'),
+  ('2026-05-14', 'Kenaikan Yesus Kristus', 'national', 'Libur Nasional'),
+  ('2026-05-27', 'Hari Raya Waisak 2570 BE', 'national', 'Libur Nasional'),
+  ('2026-06-01', 'Hari Lahir Pancasila', 'national', 'Libur Nasional'),
+  ('2026-05-27', 'Hari Raya Idul Adha 1447 Hijriah', 'national', 'Libur Nasional'),
+  ('2026-08-17', 'Hari Kemerdekaan Republik Indonesia', 'national', 'Libur Nasional'),
+  ('2026-12-25', 'Hari Raya Natal', 'national', 'Libur Nasional'),
+  ('2026-12-26', 'Cuti Bersama Natal', 'company_leave', 'Cuti Bersama Perusahaan')
+ON CONFLICT (date) DO NOTHING;
+
 

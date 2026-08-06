@@ -26,7 +26,7 @@ const CardElevated = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      'rounded-xl border border-border bg-card-elevated text-card-foreground shadow-elev-md backdrop-blur-md',
+      'rounded-xl border border-border bg-card-elevated text-card-foreground shadow-elev-glow backdrop-blur-md',
       className
     )}
     {...props}

@@ -1,6 +1,7 @@
 import 'server-only';
 import { getServerSession } from 'next-auth';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import { ZodError } from 'zod';
 import { authOptions } from '@/lib/auth/config';
 
 export type Role = 'employee' | 'hrd' | 'admin';
@@ -38,19 +39,15 @@ export async function requireRole(roles: Role[]): Promise<SessionUser> {
   return user;
 }
 
-let cachedAdmin: SupabaseClient | null = null;
-
 export function getSupabaseAdmin(): SupabaseClient {
-  if (cachedAdmin) return cachedAdmin;
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceKey) {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY belum dikonfigurasi');
   }
-  cachedAdmin = createClient(url, serviceKey, {
+  return createClient(url, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
-  return cachedAdmin;
 }
 
 export async function getSupabase() {
@@ -73,7 +70,10 @@ export function handleError(e: unknown, fallback = 'Terjadi kesalahan'): ActionR
   if (e instanceof Error) {
     if (e.message === 'UNAUTHORIZED') return fail('Anda harus login');
     if (e.message === 'FORBIDDEN') return fail('Anda tidak punya akses');
-    return fail(e.message || fallback);
+  }
+  if (e instanceof ZodError) {
+    const firstIssue = e.errors[0];
+    if (firstIssue) return fail(`Input tidak valid: ${firstIssue.path.join('.')} — ${firstIssue.message}`);
   }
   return fail(fallback);
 }

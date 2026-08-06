@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { User, Mail, Phone, Building2, Briefcase, CalendarDays, Scan } from 'lucide-react';
 import {
@@ -18,6 +18,7 @@ import { Badge } from '@/components/ui/badge';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { formatDate } from '@/lib/utils';
 import { deleteEmployeeFace } from '@/app/actions/face';
+import { getEmployeeDecryptedAvatar } from '@/app/actions/images';
 
 interface EmployeeDetailDialogProps {
   open: boolean;
@@ -34,6 +35,13 @@ export function EmployeeDetailDialog({
 }: EmployeeDetailDialogProps) {
   const [confirmFace, setConfirmFace] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open || !employee?.id) return;
+    setAvatarUrl(null);
+    void getEmployeeDecryptedAvatar(employee.id).then(setAvatarUrl);
+  }, [open, employee?.id]);
 
   if (!employee) return null;
 
@@ -67,7 +75,7 @@ export function EmployeeDetailDialog({
       <DialogContent size="md">
         <DialogHeader>
           <div className="flex items-center gap-3">
-            <Avatar name={employee.full_name} size="lg" src={employee.avatar_url} />
+            <Avatar name={employee.full_name} size="lg" src={avatarUrl ?? undefined} />
             <div>
               <DialogTitle>{employee.full_name}</DialogTitle>
               <DialogDescription>
@@ -82,7 +90,8 @@ export function EmployeeDetailDialog({
           <Badge variant={employee.is_active ? 'success' : 'secondary'}>
             {employee.is_active ? 'Aktif' : 'Nonaktif'}
           </Badge>
-          <Badge variant="outline">Kuota cuti: {employee.leave_quota ?? 12} hari</Badge>
+          <Badge variant="outline">Kuota cuti: {employee.annual_leave_quota ?? 12} hari</Badge>
+          <Badge variant="outline">Terpakai: {employee.used_leave_days ?? 0} hari</Badge>
         </div>
 
         <div className="space-y-2">

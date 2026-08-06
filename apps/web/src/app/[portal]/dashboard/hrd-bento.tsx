@@ -31,6 +31,7 @@ import {
   useDebouncedRefresh,
   useSocketEvent,
 } from '@/components/providers/socket-provider';
+import { AnnouncementWidget } from '@/components/dashboard/announcement-widget';
 
 const AttendanceTrendChart = dynamic(
   () => import('./attendance-trend-chart').then((m) => m.AttendanceTrendChart),
@@ -126,6 +127,7 @@ export function HRDBento() {
 
   return (
     <div className="space-y-4">
+      <AnnouncementWidget />
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard label="Total Karyawan" value={stats.total_employees} icon={Users} accent="primary" />
         <StatCard
@@ -149,8 +151,8 @@ export function HRDBento() {
                 Performa kehadiran 5 hari terakhir
               </p>
             </div>
-            <Button variant="outline" size="sm">
-              Detail
+            <Button variant="outline" size="sm" asChild>
+              <Link href={`/${portal}/attendance`}>Detail</Link>
             </Button>
           </CardHeader>
           <CardContent className="h-[260px] pt-2">
@@ -239,16 +241,16 @@ export function HRDBento() {
                 ))}
               </div>
             )}
-            <Link href={`/${portal}/leave`}>
-              <Button variant="ghost" className="w-full mt-2 gap-1 text-xs">
+            <Button variant="ghost" className="w-full mt-2 gap-1 text-xs" asChild>
+              <Link href={`/${portal}/leave`}>
                 Lihat semua <ArrowRight className="w-3 h-3" />
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3 lg:hidden">
         {QUICK_LINKS.map((q) => {
           const palette = ACCENT_CLASS[q.accent];
           return (

@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import { cn, getGreeting } from '@/lib/utils';
+import { getGreeting } from '@/lib/utils';
 import { ThemeToggle } from '@/components/shared/theme-toggle';
-import { Avatar } from '@/components/ui/avatar';
 import { NotificationBell } from '@/components/shared/notification-bell';
+import { AccountMenu } from '@/components/layout/account-menu';
 
 export function Header({
   title,
@@ -15,51 +15,41 @@ export function Header({
   subtitle?: string;
 }) {
   const { data: session } = useSession();
-  const userName = session?.user?.name || '';
+  const params = useParams();
+  const portal = (params?.portal as string) ?? 'employee';
+  const userName = session?.user?.name || 'User';
   const greeting = getGreeting();
 
-  // Session is fetched client-side — render plain markup first, then
-  // upgrade to hydrated markup. This avoids date/locale drift between
-  // server and client renders (e.g. greeting differs by timezone hour).
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
-
   return (
-    <header className="flex items-center justify-between gap-4 mb-6">
+    <header className="flex items-start sm:items-center justify-between gap-4 mb-6">
       <div className="min-w-0 flex-1">
         {title || subtitle ? (
-          <>
+          <div className="space-y-1">
             {title && (
-              <h1 className="text-2xl font-bold text-foreground tracking-tight truncate">
+              <h1 className="text-xl sm:text-2xl font-bold text-foreground tracking-tight text-balance">
                 {title}
               </h1>
             )}
-            {subtitle && <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>}
-          </>
+            {subtitle && <p className="text-sm text-muted-foreground text-balance">{subtitle}</p>}
+          </div>
         ) : (
-          <>
-            <p className="text-sm text-muted-foreground">{greeting},</p>
-            <h1 className="text-xl font-bold text-foreground tracking-tight truncate">
-              {/* Render deterministic server output, fill client value after mount */}
-              {mounted ? userName : ''}
+          <div className="space-y-0.5">
+            <p className="text-sm text-muted-foreground">{greeting}</p>
+            <h1 className="text-lg sm:text-xl font-bold text-foreground tracking-tight text-balance">
+              {userName}
             </h1>
-          </>
+          </div>
         )}
       </div>
 
-      <div className="flex items-center gap-1.5 shrink-0">
-        {mounted && <NotificationBell />}
-        <div className="hidden lg:block">
-          <ThemeToggle />
-        </div>
+      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
         <div className="lg:hidden">
           <ThemeToggle />
         </div>
-        {mounted && (
-          <div className="hidden lg:block">
-            <Avatar name={userName} size="sm" src={(session?.user as any)?.image} />
-          </div>
-        )}
+        <NotificationBell />
+        <div className="lg:hidden">
+          <AccountMenu role={portal === 'hrd' ? 'hrd' : 'employee'} />
+        </div>
       </div>
     </header>
   );

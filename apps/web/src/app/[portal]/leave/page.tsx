@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar } from '@/components/ui/avatar';
 import { LeaveFormDialog } from '@/components/leave/leave-form-dialog';
 import { LeaveDetailDialog } from '@/components/leave/leave-detail-dialog';
+import { HolidayCalendar } from '@/components/leave/holiday-calendar';
 import { listMyLeaves, listAllLeaves } from '@/app/actions/leave';
 import {
   useDebouncedRefresh,
@@ -210,6 +211,8 @@ export default function LeavePage() {
             </TabsContent>
           </Tabs>
 
+          <HolidayCalendar isHrd={true} />
+
           <LeaveDetailDialog
             open={!!detailItem}
             onOpenChange={(o) => !o && setDetailItem(null)}
@@ -286,6 +289,8 @@ export default function LeavePage() {
             })}
           </div>
         )}
+
+        <HolidayCalendar isHrd={false} />
       </div>
 
       <LeaveFormDialog open={formOpen} onOpenChange={setFormOpen} onSuccess={refresh} />

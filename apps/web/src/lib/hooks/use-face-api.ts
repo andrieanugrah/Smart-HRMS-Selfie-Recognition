@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { loadFaceModels, isModelsLoaded } from '@/lib/face-api/load-models';
+import { loadFaceModels, isModelsLoaded, resetFaceModels } from '@/lib/face-api/load-models';
 
 export interface FaceApiState {
   loading: boolean;
@@ -13,7 +13,7 @@ export interface FaceApiState {
  * Hook to lazy-load face-api.js models on mount and expose the load state.
  * Models are loaded once per browser session (singleton in load-models.ts).
  */
-export function useFaceApi(): FaceApiState & { ensureLoaded: () => Promise<void> } {
+export function useFaceApi(): FaceApiState & { ensureLoaded: () => Promise<void>; retry: () => Promise<void> } {
   const [state, setState] = useState<FaceApiState>({
     loading: false,
     loaded: isModelsLoaded(),
@@ -38,6 +38,11 @@ export function useFaceApi(): FaceApiState & { ensureLoaded: () => Promise<void>
     }
   }, []);
 
+  const retry = useCallback(async () => {
+    resetFaceModels();
+    await ensureLoaded();
+  }, [ensureLoaded]);
+
   useEffect(() => {
     if (!isModelsLoaded() && !state.loading) {
       ensureLoaded();
@@ -45,5 +50,5 @@ export function useFaceApi(): FaceApiState & { ensureLoaded: () => Promise<void>
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { ...state, ensureLoaded };
+  return { ...state, ensureLoaded, retry };
 }

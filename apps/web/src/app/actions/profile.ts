@@ -12,6 +12,7 @@ import {
   handleError,
   type ActionResult,
 } from './_utils';
+import { encryptImage, dataUrlToBuffer } from '@/lib/crypto/image-crypto';
 
 const updateProfileSchema = z.object({
   full_name: z.string().min(2).max(120).optional(),
@@ -139,27 +140,18 @@ export async function uploadMyAvatar(
     }
 
     const admin = getSupabaseAdmin();
-    const base64 = dataUrl.split(',')[1] ?? '';
-    const buffer = Buffer.from(base64, 'base64');
+    const buffer = dataUrlToBuffer(dataUrl);
     if (buffer.byteLength > AVATAR_MAX_BYTES) {
       return fail('Ukuran gambar maksimal 2MB');
     }
-    const ext = dataUrl.substring(dataUrl.indexOf('image/') + 6, dataUrl.indexOf(';base64')) || 'jpg';
-    const path = `${user.id}/${Date.now()}.${ext}`;
+    const encryptedBuffer = encryptImage(buffer);
+    const path = `${user.id}/${Date.now()}.bin`;
 
     const { error: uploadError } = await admin.storage
       .from('avatars')
-      .upload(path, buffer, { contentType: `image/${ext}`, upsert: true });
+      .upload(path, encryptedBuffer, { contentType: 'application/octet-stream', upsert: true });
     if (uploadError) {
-      // Fallback: simpan sebagai data URL jika bucket belum tersedia.
-      const supabase = await getSupabase();
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: dataUrl, updated_at: new Date().toISOString() })
-        .eq('id', user.id);
-      if (updateError) return fail(updateError.message);
-      revalidatePath('/[portal]/profile', 'page');
-      return ok({ url: dataUrl });
+      return fail(uploadError.message);
     }
 
     const { data: pub } = admin.storage.from('avatars').getPublicUrl(path);
@@ -167,7 +159,7 @@ export async function uploadMyAvatar(
     const supabase = await getSupabase();
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({ avatar_url: url, updated_at: new Date().toISOString() })
+      .update({ avatar_url: url, avatar_encrypted: true, updated_at: new Date().toISOString() })
       .eq('id', user.id);
     if (updateError) return fail(updateError.message);
 

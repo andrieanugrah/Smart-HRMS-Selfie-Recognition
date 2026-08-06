@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth/config';
 import { Sidebar } from '@/components/layout/sidebar';
+import { Footer } from '@/components/layout/footer';
 import { AccountMenu } from '@/components/layout/account-menu';
 
 const getSession = cache(() => getServerSession(authOptions));
@@ -31,12 +32,12 @@ export default async function PortalLayout({
   return (
     <>
       <Sidebar role={userPortal} />
-      <main className="min-h-screen bg-background lg:pl-[var(--sidebar-width)] pb-24 lg:pb-0 transition-all duration-300">
-        <div className={`mx-auto px-4 py-6 lg:p-8 ${portal === 'hrd' ? 'max-w-7xl' : 'max-w-5xl'}`}>
-          <div className="mb-4 flex justify-end lg:hidden">
-            <AccountMenu role={userPortal === 'hrd' ? 'hrd' : 'employee'} />
+      <main className="min-h-screen bg-background lg:pl-[var(--sidebar-width)] pt-3 lg:pt-0 pb-36 lg:pb-8 transition-all duration-300 flex flex-col">
+        <div className={`mx-auto px-4 py-6 lg:p-8 flex-1 flex flex-col justify-between w-full ${portal === 'hrd' ? 'max-w-7xl' : 'max-w-5xl'}`}>
+          <div>
+            {children}
           </div>
-          {children}
+          <Footer role={userPortal} />
         </div>
       </main>
     </>

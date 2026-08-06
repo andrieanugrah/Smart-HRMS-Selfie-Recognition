@@ -34,13 +34,15 @@ export function getHourInTimezone(timezone = DEFAULT_TIMEZONE, date = new Date()
  * Calculates business days (Mon-Fri) between two YYYY-MM-DD date strings inclusive.
  */
 export function calculateBusinessDays(startDateStr: string, endDateStr: string): number {
-  const start = new Date(startDateStr);
-  const end = new Date(endDateStr);
+  const [sy, sm, sd] = startDateStr.split('-').map(Number);
+  const [ey, em, ed] = endDateStr.split('-').map(Number);
+  const start = new Date(sy, sm - 1, sd);
+  const end = new Date(ey, em - 1, ed);
   let count = 0;
   const cur = new Date(start);
 
   while (cur <= end) {
-    const dayOfWeek = cur.getDay(); // 0 is Sunday, 6 is Saturday
+    const dayOfWeek = cur.getDay();
     if (dayOfWeek !== 0 && dayOfWeek !== 6) {
       count++;
     }

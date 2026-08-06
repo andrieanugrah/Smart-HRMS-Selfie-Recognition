@@ -5,6 +5,11 @@ import cors from 'cors';
 import { env } from './config/env';
 import routes from './routes';
 
+if (!process.env.INTERNAL_SOCKET_SECRET) {
+  console.error('[server] INTERNAL_SOCKET_SECRET belum dikonfigurasi');
+  process.exit(1);
+}
+
 const app = express();
 const httpServer = createServer(app);
 
@@ -23,8 +28,8 @@ app.get('/api/health', (_req, res) => {
 // Internal emit endpoint (used by Next.js Server Actions)
 app.post('/emit/:namespace', (req, res) => {
   const internalSecret = req.headers['x-internal-secret'];
-  const expectedSecret = process.env.INTERNAL_SOCKET_SECRET || 'smart-hrms-internal-secret';
-  if (internalSecret !== expectedSecret) {
+  const expectedSecret = process.env.INTERNAL_SOCKET_SECRET;
+  if (!expectedSecret || internalSecret !== expectedSecret) {
     return res.status(401).json({ error: 'unauthorized: invalid internal secret' });
   }
 
@@ -41,7 +46,11 @@ app.post('/emit/:namespace', (req, res) => {
   const nsp = io.of(`/${namespace}`);
   if (namespace === 'user') {
     if (!target) return res.status(400).json({ error: 'target required for /user namespace' });
-    nsp.to(`user:${target}`).emit(event, payload);
+    if (target === 'all') {
+      nsp.emit(event, payload);
+    } else {
+      nsp.to(`user:${target}`).emit(event, payload);
+    }
   } else {
     nsp.emit(event, payload);
   }

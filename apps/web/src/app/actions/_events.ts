@@ -19,7 +19,11 @@ async function emit(
   _options?: EmitOptions
 ) {
   const url = `${SOCKET_INTERNAL_URL}/emit/${namespace}`;
-  const internalSecret = process.env.INTERNAL_SOCKET_SECRET || 'smart-hrms-internal-secret';
+  const internalSecret = process.env.INTERNAL_SOCKET_SECRET;
+  if (!internalSecret) {
+    console.warn('[emit] INTERNAL_SOCKET_SECRET belum dikonfigurasi; real-time event diabaikan');
+    return;
+  }
   try {
     const response = await fetch(url, {
       method: 'POST',

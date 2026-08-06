@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { LogOut, User } from 'lucide-react';
-import { signOut, useSession } from 'next-auth/react';
+import { signOut } from 'next-auth/react';
+import { User, SignOut } from '@phosphor-icons/react';
+import { useSession } from 'next-auth/react';
 import { Avatar } from '@/components/ui/avatar';
 import {
   DropdownMenu,
@@ -48,7 +49,7 @@ export function AccountMenu({ role }: { role: 'employee' | 'hrd' }) {
           destructive
           onSelect={() => signOut({ callbackUrl: '/login' })}
         >
-          <LogOut className="h-4 w-4" />
+          <SignOut className="h-4 w-4" />
           Keluar
         </DropdownMenuItem>
       </DropdownMenuContent>

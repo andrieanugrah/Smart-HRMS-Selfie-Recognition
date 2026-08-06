@@ -12,7 +12,9 @@ import {
   type ActionResult,
 } from './_utils';
 import { emitToHRD, emitToUser } from './_events';
+import { logAudit } from './_audit';
 import { LEAVE_TYPES, calculateBusinessDays } from 'shared';
+import { encryptImage, dataUrlToBuffer } from '@/lib/crypto/image-crypto';
 
 const createLeaveSchema = z
   .object({
@@ -20,6 +22,7 @@ const createLeaveSchema = z
     start_date: z.string().min(1),
     end_date: z.string().min(1),
     reason: z.string().min(3, 'Alasan minimal 3 karakter').max(500),
+    attachment_url: z.string().optional().nullable(),
   })
   .refine((d) => new Date(d.end_date) >= new Date(d.start_date), {
     message: 'Tanggal selesai harus setelah tanggal mulai',
@@ -45,7 +48,7 @@ export async function listMyLeaves() {
   return data ?? [];
 }
 
-export async function listAllLeaves(status?: string) {
+export async function listAllLeaves(status?: string, from?: string, to?: string) {
   await requireRole(['hrd', 'admin']);
   const supabase = await getSupabase();
   let q = supabase
@@ -53,6 +56,8 @@ export async function listAllLeaves(status?: string) {
     .select('*, profiles:leaves_user_id_fkey!inner(full_name, nip, department, avatar_url)')
     .order('created_at', { ascending: false });
   if (status && status !== 'all') q = q.eq('status', status);
+  if (from) q = q.gte('created_at', `${from}T00:00:00`);
+  if (to) q = q.lte('created_at', `${to}T23:59:59`);
   const { data, error } = await q;
   if (error) {
     console.error('[listAllLeaves]', error.message);
@@ -90,13 +95,38 @@ export async function createLeave(
     if (data.type === 'annual') {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('leave_quota')
+        .select('annual_leave_quota, used_leave_days')
         .eq('id', user.id)
         .single();
 
-      const quota = profile?.leave_quota ?? 0;
-      if (quota < daysRequested) {
-        return fail(`Sisa kuota cuti tahunan tidak mencukupi (sisa ${quota} hari, diajukan ${daysRequested} hari kerja).`);
+      const quota = profile?.annual_leave_quota ?? 12;
+      const used = profile?.used_leave_days ?? 0;
+      const remaining = Math.max(0, quota - used);
+      if (remaining < daysRequested) {
+        return fail(`Sisa kuota cuti tahunan tidak mencukupi (sisa ${remaining} hari, diajukan ${daysRequested} hari kerja).`);
+      }
+    }
+
+    let finalAttachmentUrl = data.attachment_url ?? null;
+    if (finalAttachmentUrl && finalAttachmentUrl.startsWith('data:')) {
+      try {
+        const buffer = dataUrlToBuffer(finalAttachmentUrl);
+        const encryptedBuffer = encryptImage(buffer);
+        const ext = finalAttachmentUrl.match(/^data:application\/pdf/) ? 'pdf' : 'bin';
+        const filePath = `${user.id}/${Date.now()}.${ext}`;
+        const { error: uploadError } = await supabase.storage
+          .from('leave_attachments')
+          .upload(filePath, encryptedBuffer, { contentType: 'application/octet-stream', upsert: true });
+        if (!uploadError) {
+          const { data: publicUrlData } = supabase.storage.from('leave_attachments').getPublicUrl(filePath);
+          finalAttachmentUrl = publicUrlData.publicUrl;
+        } else {
+          console.warn('[createLeave] attachment upload warning:', uploadError.message);
+          finalAttachmentUrl = null;
+        }
+      } catch (err) {
+        console.warn('[createLeave] attachment upload failed:', err);
+        finalAttachmentUrl = null;
       }
     }
 
@@ -108,6 +138,7 @@ export async function createLeave(
         start_date: data.start_date,
         end_date: data.end_date,
         reason: data.reason,
+        attachment_url: finalAttachmentUrl,
         status: 'pending',
       })
       .select('id')
@@ -116,6 +147,16 @@ export async function createLeave(
     if (error) return fail(error.message);
 
     void emitToHRD('leave:new', { id: created.id, user_name: user.name, type: data.type });
+
+    void logAudit({
+      actor_id: user.id,
+      actor_email: user.email,
+      actor_role: user.role,
+      action: 'create',
+      resource_type: 'leave',
+      resource_id: created.id,
+      details: { type: data.type, start_date: data.start_date, end_date: data.end_date },
+    });
 
     revalidatePath('/employee/leave');
     revalidatePath('/hrd/leave');
@@ -160,16 +201,21 @@ export async function approveLeave(id: string): Promise<ActionResult> {
       const days = calculateBusinessDays(leave.start_date, leave.end_date);
       const { data: profile } = await supabase
         .from('profiles')
-        .select('leave_quota')
+        .select('annual_leave_quota, used_leave_days')
         .eq('id', leave.user_id)
         .single();
 
       if (profile) {
-        const currentQuota = profile.leave_quota ?? 12;
-        const newQuota = Math.max(0, currentQuota - days);
+        const quota = profile.annual_leave_quota ?? 12;
+        const used = profile.used_leave_days ?? 0;
+        const remaining = Math.max(0, quota - used);
+        if (remaining < days) {
+          return fail(`Kuota cuti karyawan tidak mencukupi (sisa ${remaining} hari, diajukan ${days} hari kerja).`);
+        }
+        const newUsed = used + days;
         await supabase
           .from('profiles')
-          .update({ leave_quota: newQuota, updated_at: new Date().toISOString() })
+          .update({ used_leave_days: newUsed, updated_at: new Date().toISOString() })
           .eq('id', leave.user_id);
       }
     }
@@ -185,6 +231,16 @@ export async function approveLeave(id: string): Promise<ActionResult> {
 
     void emitToUser(leave.user_id, 'leave:approved', { id });
     void emitToHRD('leave:updated', { id });
+
+    void logAudit({
+      actor_id: admin.id,
+      actor_email: admin.email,
+      actor_role: admin.role,
+      action: 'approve',
+      resource_type: 'leave',
+      resource_id: id,
+      details: { type: leave.type, employee_id: leave.user_id },
+    });
 
     revalidatePath('/employee/leave');
     revalidatePath('/hrd/leave');
@@ -239,6 +295,16 @@ export async function rejectLeave(
 
     void emitToUser(leave.user_id, 'leave:rejected', { id });
     void emitToHRD('leave:updated', { id });
+
+    void logAudit({
+      actor_id: admin.id,
+      actor_email: admin.email,
+      actor_role: admin.role,
+      action: 'reject',
+      resource_type: 'leave',
+      resource_id: id,
+      details: { type: leave.type, employee_id: leave.user_id, rejection_reason: data.rejection_reason },
+    });
 
     revalidatePath('/employee/leave');
     revalidatePath('/hrd/leave');

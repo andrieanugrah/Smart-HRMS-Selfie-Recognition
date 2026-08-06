@@ -153,42 +153,7 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <div
-            className="mt-8 space-y-3 animate-in fade-in-0"
-            style={{ animationFillMode: 'backwards', animationDuration: '400ms', animationDelay: '300ms' }}
-          >
-            <p className="text-xs text-muted-foreground font-medium">Akun demo:</p>
-            <div className="flex flex-col gap-2">
-              {[
-                { label: 'Employee', email: 'employee@company.com' },
-                { label: 'HRD', email: 'hr@company.com' },
-              ].map((cred) => (
-                <button
-                  key={cred.email}
-                  type="button"
-                  onClick={() => {
-                    setEmail(cred.email);
-                    setPassword('123456');
-                  }}
-                  className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-border hover:bg-muted transition-colors text-left group"
-                >
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-xs font-bold text-primary shrink-0">
-                    {cred.label === 'HRD' ? 'H' : 'E'}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground">{cred.label}</p>
-                    <p className="text-xs text-muted-foreground truncate">{cred.email}</p>
-                  </div>
-                  <span className="text-[10px] text-muted-foreground group-hover:text-foreground transition-colors shrink-0">
-                    Klik untuk isi
-                  </span>
-                </button>
-              ))}
-            </div>
-            <p className="text-[10px] text-muted-foreground text-center mt-2">
-              Password: 123456
-            </p>
-          </div>
+
         </div>
       </div>
     </div>

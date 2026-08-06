@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useCamera } from '@/lib/hooks/use-camera';
 import { useFaceApi } from '@/lib/hooks/use-face-api';
 import { detectFace } from '@/lib/face-api/detect-face';
+import { compressDataUrl } from '@/lib/image-compression';
 
 interface FaceCaptureProps {
   onCapture: (data: { descriptor: Float32Array; imageDataUrl: string }) => void;
@@ -54,6 +55,7 @@ export function FaceCapture({
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('user');
   const { videoRef, status, error: camError, start, stop } = useCamera({ facingMode });
   const faceApi = useFaceApi();
+  const retryFaceApi = faceApi.retry;
   const [detected, setDetected] = useState(false);
   const detectedRef = useRef(false);
   const rafRef = useRef<number | null>(null);
@@ -225,7 +227,8 @@ export function FaceCapture({
         processingRef.current = false;
         return;
       }
-      const dataUrl = await blobToDataUrl(blob);
+      const rawDataUrl = await blobToDataUrl(blob);
+      const dataUrl = await compressDataUrl(rawDataUrl, { maxWidth: 800, maxHeight: 800, quality: 0.75 });
       onCapture({ descriptor: result.descriptor, imageDataUrl: dataUrl });
       // Keep processingRef true while the parent finishes its server action;
       // the parent signals completion via the `processing` prop.
@@ -333,8 +336,17 @@ export function FaceCapture({
       </div>
 
       {errorBanner && (
-        <div className="rounded-xl bg-danger/10 border border-danger/20 px-4 py-2 text-xs text-danger">
-          {errorBanner}
+        <div className="rounded-xl bg-danger/10 border border-danger/20 px-4 py-2 text-xs text-danger flex items-center justify-between gap-2">
+          <span className="flex-1">{errorBanner}</span>
+          {faceApi.error && (
+            <button
+              type="button"
+              onClick={retryFaceApi}
+              className="shrink-0 font-medium underline hover:text-danger-foreground"
+            >
+              Coba lagi
+            </button>
+          )}
         </div>
       )}
 

@@ -17,9 +17,9 @@ export default function NotFound() {
               URL yang Anda buka tidak tersedia.
             </p>
           </div>
-          <Link href="/">
-            <Button>Kembali ke Beranda</Button>
-          </Link>
+          <Button asChild>
+            <Link href="/">Kembali ke Beranda</Link>
+          </Button>
         </CardContent>
       </Card>
     </div>

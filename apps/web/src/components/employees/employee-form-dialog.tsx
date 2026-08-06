@@ -46,6 +46,7 @@ export function EmployeeFormDialog({
     phone: '',
     role: 'employee' as 'employee' | 'hrd' | 'admin',
     leave_quota: 12,
+    annual_leave_quota: 12,
     password: '',
   });
   const [error, setError] = useState('');
@@ -63,6 +64,7 @@ export function EmployeeFormDialog({
         phone: employee.phone ?? '',
         role: employee.role ?? 'employee',
         leave_quota: employee.leave_quota ?? 12,
+        annual_leave_quota: employee.annual_leave_quota ?? 12,
         password: '',
       });
     } else {
@@ -75,6 +77,7 @@ export function EmployeeFormDialog({
         phone: '',
         role: 'employee',
         leave_quota: 12,
+        annual_leave_quota: 12,
         password: '',
       });
     }
@@ -199,17 +202,30 @@ export function EmployeeFormDialog({
                 />
               </Field>
             </div>
-            <Field label="Kuota Cuti (hari/tahun)">
-              <Input
-                type="number"
-                min={0}
-                max={365}
-                value={form.leave_quota}
-                onChange={(e) =>
-                  setForm({ ...form, leave_quota: Number(e.target.value) || 0 })
-                }
-              />
-            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Kuota Cuti (legacy)">
+                <Input
+                  type="number"
+                  min={0}
+                  max={365}
+                  value={form.leave_quota}
+                  onChange={(e) =>
+                    setForm({ ...form, leave_quota: Number(e.target.value) || 0 })
+                  }
+                />
+              </Field>
+              <Field label="Kuota Cuti Tahunan">
+                <Input
+                  type="number"
+                  min={0}
+                  max={365}
+                  value={form.annual_leave_quota}
+                  onChange={(e) =>
+                    setForm({ ...form, annual_leave_quota: Number(e.target.value) || 0 })
+                  }
+                />
+              </Field>
+            </div>
           </FormSection>
 
           {!isEdit && (

@@ -7,41 +7,52 @@ import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/shared/theme-toggle';
 import { Avatar } from '@/components/ui/avatar';
 import {
-  LayoutDashboard,
+  SquaresFour,
   Camera,
   CalendarCheck,
   Clock,
   User,
-  ClipboardCheck,
+  ClipboardText,
   Users,
-  FileBarChart,
-  LogOut,
-  type LucideIcon,
-} from 'lucide-react';
+  ChartBar,
+  SignOut,
+  Receipt,
+  CurrencyDollar,
+  Megaphone,
+  CalendarBlank,
+  type Icon,
+} from '@phosphor-icons/react';
 import { signOut } from 'next-auth/react';
 
 interface NavItem {
   href: string;
   label: string;
-  icon: LucideIcon;
+  icon: Icon;
   group?: string;
+  badge?: () => number;
 }
 
 const employeeNav: NavItem[] = [
-  { href: '/employee/dashboard', label: 'Dashboard', icon: LayoutDashboard, group: 'Utama' },
+  { href: '/employee/dashboard', label: 'Dashboard', icon: SquaresFour, group: 'Utama' },
   { href: '/employee/attendance', label: 'Presensi', icon: Camera, group: 'Utama' },
   { href: '/employee/leave', label: 'Cuti / Izin', icon: CalendarCheck, group: 'Pengajuan' },
   { href: '/employee/overtime', label: 'Lembur', icon: Clock, group: 'Pengajuan' },
+  { href: '/employee/reimbursement', label: 'Reimbursement', icon: Receipt, group: 'Pengajuan' },
+  { href: '/employee/payroll', label: 'Slip Gaji', icon: CurrencyDollar, group: 'Keuangan' },
   { href: '/employee/profile', label: 'Profil', icon: User, group: 'Akun' },
 ];
 
 const hrdNav: NavItem[] = [
-  { href: '/hrd/dashboard', label: 'Dashboard', icon: LayoutDashboard, group: 'Operasional' },
-  { href: '/hrd/attendance', label: 'Presensi', icon: ClipboardCheck, group: 'Operasional' },
-  { href: '/hrd/leave', label: 'Cuti / Izin', icon: CalendarCheck, group: 'Approval' },
-  { href: '/hrd/overtime', label: 'Lembur', icon: Clock, group: 'Approval' },
+  { href: '/hrd/dashboard', label: 'Dashboard', icon: SquaresFour, group: 'Operasional' },
+  { href: '/hrd/attendance', label: 'Rekap Presensi', icon: ClipboardText, group: 'Operasional' },
+  { href: '/hrd/shift', label: 'Kelola Shift', icon: CalendarBlank, group: 'Operasional' },
+  { href: '/hrd/reports', label: 'Laporan & Ekspor', icon: ChartBar, group: 'Operasional' },
+  { href: '/hrd/leave', label: 'Approval Cuti', icon: CalendarCheck, group: 'Approval' },
+  { href: '/hrd/overtime', label: 'Approval Lembur', icon: Clock, group: 'Approval' },
+  { href: '/hrd/reimbursement', label: 'Approval Klaim', icon: Receipt, group: 'Approval' },
+  { href: '/hrd/payroll', label: 'Payroll', icon: CurrencyDollar, group: 'Keuangan' },
+  { href: '/hrd/announcements', label: 'Pengumuman', icon: Megaphone, group: 'Informasi' },
   { href: '/hrd/employees', label: 'Karyawan', icon: Users, group: 'SDM' },
-  { href: '/hrd/reports', label: 'Laporan', icon: FileBarChart, group: 'Operasional' },
 ];
 
 interface SidebarProps {
@@ -57,9 +68,16 @@ export function Sidebar({ role }: SidebarProps) {
 
   return (
     <>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-[60] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-primary focus:text-white"
+      >
+        Lewati ke konten
+      </a>
+
       <aside
         className={cn(
-          'hidden lg:flex flex-col fixed left-0 top-0 h-screen bg-sidebar/85 backdrop-blur-xl border-r border-border z-40',
+          'hidden lg:flex flex-col fixed left-0 top-0 min-h-[100dvh] bg-sidebar/85 backdrop-blur-xl border-r border-border z-40',
           'w-[var(--sidebar-width)]'
         )}
       >
@@ -78,7 +96,7 @@ export function Sidebar({ role }: SidebarProps) {
           </div>
         </Link>
 
-        <nav className="flex-1 py-5 px-3 overflow-y-auto space-y-5">
+        <nav className="flex-1 py-5 px-3 overflow-y-auto space-y-5" aria-label="Sidebar">
           {groups.map((group) => (
             <div key={group}>
               <p className="text-label text-muted-foreground px-3 mb-2">{group}</p>
@@ -92,26 +110,24 @@ export function Sidebar({ role }: SidebarProps) {
                         key={item.href}
                         href={item.href}
                         aria-current={active ? 'page' : undefined}
+                        className={cn(
+                          'group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                          active
+                            ? 'bg-gradient-to-r from-accent/15 via-accent/5 to-transparent text-accent font-semibold'
+                            : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground'
+                        )}
                       >
-                        <div
+                        {active && (
+                          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-gradient-to-b from-accent to-primary shadow-elev-sm" />
+                        )}
+                        <item.icon
                           className={cn(
-                            'group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200',
-                            active
-                              ? 'bg-gradient-to-r from-primary/15 via-primary/8 to-transparent text-primary font-semibold'
-                              : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground'
+                            'w-[18px] h-[18px] shrink-0 transition-colors',
+                            active ? 'text-accent' : 'text-muted-foreground group-hover:text-foreground'
                           )}
-                        >
-                          {active && (
-                            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-gradient-to-b from-primary to-secondary shadow-elev-sm" />
-                          )}
-                          <item.icon
-                            className={cn(
-                              'w-[18px] h-[18px] shrink-0 transition-colors',
-                              active ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'
-                            )}
-                          />
-                          <span className="truncate">{item.label}</span>
-                        </div>
+                          weight={active ? 'fill' : 'regular'}
+                        />
+                        <span className="truncate">{item.label}</span>
                       </Link>
                     );
                   })}
@@ -132,47 +148,14 @@ export function Sidebar({ role }: SidebarProps) {
             <ThemeToggle />
           </div>
           <button
-            onClick={() => signOut()}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-danger/10 hover:text-danger transition-colors"
+            onClick={() => signOut({ callbackUrl: '/login' })}
+            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-danger/10 hover:text-danger transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           >
-            <LogOut className="w-4 h-4 shrink-0" />
+            <SignOut className="w-4 h-4 shrink-0" />
             <span>Keluar</span>
           </button>
         </div>
       </aside>
-
-      <nav className="lg:hidden fixed bottom-3 left-3 right-3 z-50 glass-panel rounded-2xl">
-        <div className="flex items-center justify-around py-2 px-1">
-          {nav.slice(0, 5).map((item) => {
-            const active = pathname === item.href;
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                aria-current={active ? 'page' : undefined}
-                className="flex-1"
-              >
-                <div
-                  className={cn(
-                    'flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl text-[10px] font-medium transition-all',
-                    active ? 'text-primary' : 'text-muted-foreground'
-                  )}
-                >
-                  <div
-                    className={cn(
-                      'p-1.5 rounded-lg transition-colors',
-                      active && 'bg-primary/10'
-                    )}
-                  >
-                    <item.icon className="w-4 h-4" />
-                  </div>
-                  <span className="truncate">{item.label}</span>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-      </nav>
     </>
   );
 }

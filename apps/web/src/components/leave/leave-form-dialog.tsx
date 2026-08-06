@@ -45,6 +45,8 @@ export function LeaveFormDialog({ open, onOpenChange, onSuccess }: LeaveFormDial
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [reason, setReason] = useState('');
+  const [attachment, setAttachment] = useState<File | null>(null);
+  const [attachmentPreview, setAttachmentPreview] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [pending, startTransition] = useTransition();
 
@@ -53,12 +55,30 @@ export function LeaveFormDialog({ open, onOpenChange, onSuccess }: LeaveFormDial
     setStartDate(undefined);
     setEndDate(undefined);
     setReason('');
+    setAttachment(null);
+    setAttachmentPreview(null);
     setError('');
   }
 
   function handleOpenChange(open: boolean) {
     if (!open) reset();
     onOpenChange(open);
+  }
+
+  function handleAttachmentChange(file: File | null) {
+    if (!file) {
+      setAttachment(null);
+      setAttachmentPreview(null);
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Ukuran lampiran maksimal 5MB');
+      return;
+    }
+    setAttachment(file);
+    const reader = new FileReader();
+    reader.onload = () => setAttachmentPreview(reader.result as string);
+    reader.readAsDataURL(file);
   }
 
   function handleSubmit(e: React.FormEvent) {
@@ -79,6 +99,7 @@ export function LeaveFormDialog({ open, onOpenChange, onSuccess }: LeaveFormDial
       start_date: startDate.toISOString().split('T')[0],
       end_date: endDate.toISOString().split('T')[0],
       reason: reason.trim(),
+      attachment_url: attachmentPreview,
     };
 
     startTransition(async () => {
@@ -159,6 +180,25 @@ export function LeaveFormDialog({ open, onOpenChange, onSuccess }: LeaveFormDial
                 placeholder="Jelaskan alasan pengajuan cuti/izin Anda..."
                 rows={4}
               />
+            </Field>
+
+            <Field label="Lampiran (opsional)">
+              <input
+                type="file"
+                accept="image/*,.pdf"
+                onChange={(e) => handleAttachmentChange(e.target.files?.[0] ?? null)}
+                className="block w-full text-sm text-muted-foreground file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-primary/10 file:text-primary hover:file:bg-primary/20"
+              />
+              {attachmentPreview && attachment?.type.startsWith('image/') && (
+                <img
+                  src={attachmentPreview}
+                  alt="Preview lampiran"
+                  className="mt-2 max-h-32 rounded-lg border border-border object-cover"
+                />
+              )}
+              {attachment && !attachment.type.startsWith('image/') && (
+                <p className="mt-2 text-xs text-muted-foreground">{attachment.name}</p>
+              )}
             </Field>
 
             {error && (

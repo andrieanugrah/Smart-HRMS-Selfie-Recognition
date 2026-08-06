@@ -1,5 +1,6 @@
 'use server';
 
+import { randomUUID } from 'crypto';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import {
@@ -11,6 +12,7 @@ import {
   handleError,
   type ActionResult,
 } from './_utils';
+import { logAudit } from './_audit';
 import { ROLES } from 'shared';
 
 const employeeSchema = z.object({
@@ -21,6 +23,7 @@ const employeeSchema = z.object({
   position: z.string().max(80).optional().nullable(),
   role: z.enum(ROLES),
   leave_quota: z.number().int().min(0).max(365).optional().default(12),
+  annual_leave_quota: z.number().int().min(0).max(365).optional().default(12),
   phone: z.string().max(20).optional().nullable(),
   password: z.string().min(6).max(72).optional(),
 });
@@ -36,24 +39,23 @@ export async function listEmployees(
   const supabase = await getSupabase();
   let q = supabase
     .from('profiles')
-    .select('id, email, full_name, nip, role, department, position, phone, avatar_url, leave_quota, is_active, created_at')
+    .select('id, email, full_name, nip, role, department, position, phone, avatar_url, leave_quota, annual_leave_quota, used_leave_days, is_active, created_at')
     .order('full_name', { ascending: true });
   if (opts.department) q = q.eq('department', opts.department);
   if (opts.role) q = q.eq('role', opts.role);
   if (typeof opts.is_active === 'boolean') q = q.eq('is_active', opts.is_active);
-  const { data } = await q;
-  let rows = (data as any[]) ?? [];
   if (opts.search) {
-    const s = opts.search.toLowerCase();
-    rows = rows.filter(
-      (r) =>
-        r.full_name?.toLowerCase().includes(s) ||
-        r.nip?.toLowerCase().includes(s) ||
-        r.department?.toLowerCase().includes(s) ||
-        r.email?.toLowerCase().includes(s)
+    const s = opts.search.replace(/[%_]/g, '\\$&');
+    q = q.or(
+      `full_name.ilike.%${s}%,nip.ilike.%${s}%,department.ilike.%${s}%,email.ilike.%${s}%`
     );
   }
-  return rows;
+  const { data, error } = await q;
+  if (error) {
+    console.error('[listEmployees]', error.message);
+    return [];
+  }
+  return (data as any[]) ?? [];
 }
 
 export async function getEmployee(id: string) {
@@ -75,13 +77,13 @@ export async function createEmployee(
   input: z.infer<typeof employeeSchema>
 ): Promise<ActionResult<{ id: string; tempPassword?: string }>> {
   try {
-    await requireRole(['hrd', 'admin']);
+    const admin = await requireRole(['hrd', 'admin']);
     const data = employeeSchema.parse(input);
-    const admin = getSupabaseAdmin();
+    const adminClient = getSupabaseAdmin();
 
     const tempPassword = data.password ?? generateTempPassword();
 
-    const { data: authData, error: authError } = await admin.auth.admin.createUser({
+    const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
       email: data.email,
       password: tempPassword,
       email_confirm: true,
@@ -93,7 +95,7 @@ export async function createEmployee(
     }
     const userId = authData.user.id;
 
-    const { data: created, error: profileError } = await admin
+    const { data: created, error: profileError } = await adminClient
       .from('profiles')
       .insert({
         id: userId,
@@ -105,6 +107,8 @@ export async function createEmployee(
         phone: data.phone ?? null,
         role: data.role,
         leave_quota: data.leave_quota ?? 12,
+        annual_leave_quota: data.annual_leave_quota ?? 12,
+        used_leave_days: 0,
         is_active: true,
       })
       .select('id')
@@ -112,9 +116,19 @@ export async function createEmployee(
 
     if (profileError) {
       // Rollback the auth user so we don't leave orphans behind
-      await admin.auth.admin.deleteUser(userId).catch(() => undefined);
+      await adminClient.auth.admin.deleteUser(userId).catch(() => undefined);
       return fail(profileError.message);
     }
+
+    void logAudit({
+      actor_id: admin.id,
+      actor_email: admin.email,
+      actor_role: admin.role,
+      action: 'create',
+      resource_type: 'employee',
+      resource_id: created.id,
+      details: { email: data.email, role: data.role, department: data.department },
+    });
 
     revalidatePath('/[portal]/employees', 'page');
     return ok({ id: created.id, tempPassword: data.password ? undefined : tempPassword });
@@ -128,10 +142,10 @@ export async function updateEmployee(
   input: z.infer<typeof updateEmployeeSchema>
 ): Promise<ActionResult> {
   try {
-    await requireRole(['hrd', 'admin']);
+    const admin = await requireRole(['hrd', 'admin']);
     const data = updateEmployeeSchema.parse(input);
     const supabase = await getSupabase();
-    const admin = getSupabaseAdmin();
+    const adminClient = getSupabaseAdmin();
 
     const { error } = await supabase
       .from('profiles')
@@ -144,9 +158,19 @@ export async function updateEmployee(
       if (data.email) updates.email = data.email;
       if (data.password) updates.password = data.password;
       if (data.role) updates.app_metadata = { role: data.role };
-      const { error: authError } = await admin.auth.admin.updateUserById(id, updates);
+      const { error: authError } = await adminClient.auth.admin.updateUserById(id, updates);
       if (authError) return fail(authError.message);
     }
+
+    void logAudit({
+      actor_id: admin.id,
+      actor_email: admin.email,
+      actor_role: admin.role,
+      action: 'update',
+      resource_type: 'employee',
+      resource_id: id,
+      details: { updated_fields: Object.keys(data) },
+    });
 
     revalidatePath('/[portal]/employees', 'page');
     return ok({ id });
@@ -159,9 +183,28 @@ export async function deleteEmployee(id: string): Promise<ActionResult> {
   try {
     const me = await requireRole(['hrd', 'admin']);
     if (id === me.id) return fail('Tidak dapat menghapus akun sendiri');
+
+    // Disable Supabase Auth login so the user cannot sign in even if they know the password.
+    const admin = getSupabaseAdmin();
+    const { error: authError } = await admin.auth.admin.updateUserById(id, {
+      password: randomUUID() + randomUUID(),
+      app_metadata: { role: 'inactive' },
+    });
+    if (authError) return fail(authError.message);
+
     const supabase = await getSupabase();
     const { error } = await supabase.from('profiles').update({ is_active: false }).eq('id', id);
     if (error) return fail(error.message);
+
+    void logAudit({
+      actor_id: me.id,
+      actor_email: me.email,
+      actor_role: me.role,
+      action: 'delete',
+      resource_type: 'employee',
+      resource_id: id,
+    });
+
     revalidatePath('/[portal]/employees', 'page');
     return ok({ id });
   } catch (e) {

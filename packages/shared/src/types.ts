@@ -92,3 +92,118 @@ export interface DashboardStats {
   absent_today: number;
   pending_approvals: number;
 }
+
+export interface Shift {
+  id: string;
+  name: string;
+  start_time: string;
+  end_time: string;
+  grace_period_minutes: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface UserShift {
+  id: string;
+  user_id: string;
+  shift_id: string;
+  date: string;
+  shifts?: Shift;
+  profiles?: Profile;
+}
+
+export interface SalaryComponent {
+  id: string;
+  user_id: string;
+  base_salary: number;
+  allowance: number;
+  overtime_rate_per_hour: number;
+  late_penalty_per_minute: number;
+  profiles?: Profile;
+}
+
+export interface Payroll {
+  id: string;
+  user_id: string;
+  month: number;
+  year: number;
+  base_salary: number;
+  allowance: number;
+  overtime_pay: number;
+  late_deduction: number;
+  absence_deduction: number;
+  net_salary: number;
+  status: 'draft' | 'published' | 'paid';
+  generated_at: string;
+  profiles?: Profile;
+}
+
+export type ReimbursementCategory = 'medical' | 'transport' | 'operational' | 'meal' | 'other';
+
+export interface Reimbursement {
+  id: string;
+  user_id: string;
+  category: ReimbursementCategory;
+  amount: number;
+  date: string;
+  description: string;
+  receipt_url: string | null;
+  status: RequestStatus;
+  approved_by: string | null;
+  approved_at: string | null;
+  rejection_reason: string | null;
+  created_at: string;
+  profiles?: Profile;
+}
+
+export type UrgencyLevel = 'info' | 'warning' | 'urgent';
+
+export interface Announcement {
+  id: string;
+  author_id: string;
+  title: string;
+  content: string;
+  urgency: UrgencyLevel;
+  is_pinned: boolean;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+  profiles?: Profile;
+}
+
+export type HolidayType = 'national' | 'company_leave';
+
+export interface Holiday {
+  id: string;
+  date: string;
+  name: string;
+  type: HolidayType;
+  description: string | null;
+  created_at: string;
+}
+
+export interface AuditLog {
+  id: string;
+  actor_id: string;
+  actor_email: string | null;
+  actor_role: string | null;
+  action: string;
+  resource_type: string;
+  resource_id: string | null;
+  details: Record<string, any>;
+  ip_address: string | null;
+  user_agent: string | null;
+  created_at: string;
+}
+
+export interface DepartmentAnalytics {
+  department: string;
+  total_employees: number;
+  attendance_rate: number;
+  late_count: number;
+  leave_count: number;
+  overtime_hours: number;
+}
+
+

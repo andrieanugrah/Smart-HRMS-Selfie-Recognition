@@ -1,6 +1,7 @@
 'use client';
 
 const MODEL_URL = '/models';
+const LOAD_TIMEOUT_MS = 30_000;
 
 type FaceApiModule = typeof import('face-api.js');
 let faceapiRef: FaceApiModule | null = null;
@@ -47,11 +48,18 @@ export async function loadFaceModels(): Promise<FaceApiModule> {
       console.warn('[face-api] backend initialization skipped', error);
     }
 
-    await Promise.all([
-      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
-      faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
-      faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+    const loadWithTimeout = Promise.race([
+      Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+        faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+        faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+      ]),
+      new Promise<void>((_, reject) =>
+        setTimeout(() => reject(new Error('Waktu memuat model habis (timeout 30s)')), LOAD_TIMEOUT_MS)
+      ),
     ]);
+
+    await loadWithTimeout;
 
     faceapiRef = faceapi;
     loaded = true;
@@ -59,10 +67,17 @@ export async function loadFaceModels(): Promise<FaceApiModule> {
     return faceapi;
   })().catch((err) => {
     loadPromise = null;
+    loaded = false;
     throw err;
   });
 
   return loadPromise;
+}
+
+export function resetFaceModels(): void {
+  loadPromise = null;
+  loaded = false;
+  faceapiRef = null;
 }
 
 export function getFaceApi(): FaceApiModule | null {
