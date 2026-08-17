@@ -4,11 +4,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { cn } from '@/lib/utils';
+import { Logo } from '@/components/shared/logo';
 import { ThemeToggle } from '@/components/shared/theme-toggle';
 import { Avatar } from '@/components/ui/avatar';
 import {
   SquaresFour,
-  Camera,
+  Fingerprint,
   CalendarCheck,
   Clock,
   User,
@@ -16,7 +17,7 @@ import {
   Users,
   ChartBar,
   SignOut,
-  Receipt,
+  Wallet,
   CurrencyDollar,
   Megaphone,
   CalendarBlank,
@@ -34,10 +35,10 @@ interface NavItem {
 
 const employeeNav: NavItem[] = [
   { href: '/employee/dashboard', label: 'Dashboard', icon: SquaresFour, group: 'Utama' },
-  { href: '/employee/attendance', label: 'Presensi', icon: Camera, group: 'Utama' },
+  { href: '/employee/attendance', label: 'Presensi', icon: Fingerprint, group: 'Utama' },
   { href: '/employee/leave', label: 'Cuti / Izin', icon: CalendarCheck, group: 'Pengajuan' },
   { href: '/employee/overtime', label: 'Lembur', icon: Clock, group: 'Pengajuan' },
-  { href: '/employee/reimbursement', label: 'Reimbursement', icon: Receipt, group: 'Pengajuan' },
+  { href: '/employee/reimbursement', label: 'Reimbursement', icon: Wallet, group: 'Pengajuan' },
   { href: '/employee/payroll', label: 'Slip Gaji', icon: CurrencyDollar, group: 'Keuangan' },
   { href: '/employee/profile', label: 'Profil', icon: User, group: 'Akun' },
 ];
@@ -49,7 +50,7 @@ const hrdNav: NavItem[] = [
   { href: '/hrd/reports', label: 'Laporan & Ekspor', icon: ChartBar, group: 'Operasional' },
   { href: '/hrd/leave', label: 'Approval Cuti', icon: CalendarCheck, group: 'Approval' },
   { href: '/hrd/overtime', label: 'Approval Lembur', icon: Clock, group: 'Approval' },
-  { href: '/hrd/reimbursement', label: 'Approval Klaim', icon: Receipt, group: 'Approval' },
+  { href: '/hrd/reimbursement', label: 'Approval Klaim', icon: Wallet, group: 'Approval' },
   { href: '/hrd/payroll', label: 'Payroll', icon: CurrencyDollar, group: 'Keuangan' },
   { href: '/hrd/announcements', label: 'Pengumuman', icon: Megaphone, group: 'Informasi' },
   { href: '/hrd/employees', label: 'Karyawan', icon: Users, group: 'SDM' },
@@ -83,17 +84,9 @@ export function Sidebar({ role }: SidebarProps) {
       >
         <Link
           href={role === 'hrd' ? '/hrd/dashboard' : '/employee/dashboard'}
-          className="flex items-center gap-3 px-5 h-16 border-b border-border shrink-0"
+          className="flex items-center gap-3 px-5 h-16 border-b border-border shrink-0 hover:opacity-90 transition-opacity"
         >
-          <div className="w-10 h-10 rounded-xl gradient-brand flex items-center justify-center shadow-elev-glow shrink-0">
-            <span className="text-white font-bold text-sm tracking-tight">HR</span>
-          </div>
-          <div className="flex flex-col min-w-0 leading-tight">
-            <span className="font-bold text-sm text-foreground tracking-tight">Smart HRMS</span>
-            <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
-              {role === 'hrd' ? 'HRD Console' : 'Employee Portal'}
-            </span>
-          </div>
+          <Logo size="md" />
         </Link>
 
         <nav className="flex-1 py-5 px-3 overflow-y-auto space-y-5" aria-label="Sidebar">
@@ -111,19 +104,19 @@ export function Sidebar({ role }: SidebarProps) {
                         href={item.href}
                         aria-current={active ? 'page' : undefined}
                         className={cn(
-                          'group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                          'group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                           active
-                            ? 'bg-gradient-to-r from-accent/15 via-accent/5 to-transparent text-accent font-semibold'
+                            ? 'bg-[#10B981]/15 text-[#10B981] font-semibold border border-[#10B981]/25 shadow-xs'
                             : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground'
                         )}
                       >
                         {active && (
-                          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 rounded-r-full bg-gradient-to-b from-accent to-primary shadow-elev-sm" />
+                          <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-5 rounded-r-full bg-[#10B981] shadow-xs" />
                         )}
                         <item.icon
                           className={cn(
                             'w-[18px] h-[18px] shrink-0 transition-colors',
-                            active ? 'text-accent' : 'text-muted-foreground group-hover:text-foreground'
+                            active ? 'text-[#10B981]' : 'text-muted-foreground group-hover:text-foreground'
                           )}
                           weight={active ? 'fill' : 'regular'}
                         />

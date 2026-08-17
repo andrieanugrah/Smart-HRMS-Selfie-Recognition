@@ -2,6 +2,7 @@
 
 import { Printer, Download, CheckCircle, Building2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { LogoMark } from '@/components/shared/logo';
 import type { Payroll } from 'shared';
 
 interface PayslipPdfModalProps {
@@ -71,9 +72,7 @@ export function PayslipPdfModal({ payroll, onClose }: PayslipPdfModalProps) {
           <div className="flex items-start justify-between border-b border-border pb-6">
             <div>
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg gradient-brand flex items-center justify-center text-white font-bold text-xs">
-                  HR
-                </div>
+                <LogoMark size={26} />
                 <h1 className="text-xl font-bold tracking-tight">PT SMART HRMS INDONESIA</h1>
               </div>
               <p className="text-xs text-muted-foreground mt-1">

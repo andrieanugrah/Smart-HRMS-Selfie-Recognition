@@ -7,6 +7,7 @@ import { Loader2, Camera, CalendarCheck, Clock, ShieldCheck } from 'lucide-react
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/shared/theme-toggle';
+import { Logo } from '@/components/shared/logo';
 
 const featureList = [
   { icon: Camera, text: 'Absensi selfie otomatis' },
@@ -59,12 +60,7 @@ export default function LoginPage() {
         <div className="absolute -bottom-32 -left-32 w-80 h-80 rounded-full bg-white/10 blur-3xl pointer-events-none" />
 
         <div className="relative z-10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center backdrop-blur-md border border-white/25">
-              <span className="text-white font-bold">HR</span>
-            </div>
-            <span className="font-bold text-lg tracking-tight">Smart HRMS</span>
-          </div>
+          <Logo size="lg" showTagline className="bg-white/10 p-3 rounded-2xl backdrop-blur-md border border-white/15 inline-flex" />
         </div>
 
         <div className="relative z-10 space-y-8">
@@ -97,12 +93,7 @@ export default function LoginPage() {
       <div className="flex-1 flex items-center justify-center p-6 bg-background">
         <div className="w-full max-w-sm">
           <div className="lg:hidden flex items-center justify-between mb-8">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 gradient-brand rounded-xl flex items-center justify-center shadow-elev-sm">
-                <span className="text-white font-bold text-sm">HR</span>
-              </div>
-              <span className="font-bold text-foreground">Smart HRMS</span>
-            </div>
+            <Logo size="sm" />
             <ThemeToggle />
           </div>
 
@@ -110,15 +101,15 @@ export default function LoginPage() {
             className="animate-in fade-in-0 slide-in-from-bottom-2"
             style={{ animationFillMode: 'backwards', animationDuration: '400ms' }}
           >
-            <h1 className="text-title text-foreground">Masuk</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Gunakan akun karyawan Anda untuk melanjutkan
+            <h1 className="text-2xl font-bold text-foreground tracking-tight">Selamat datang kembali!</h1>
+            <p className="text-sm text-muted-foreground mt-1.5">
+              Masuk untuk melanjutkan ke Smart HRMS
             </p>
           </div>
 
           <form
             onSubmit={handleSubmit}
-            className="mt-8 space-y-5 animate-in fade-in-0 slide-in-from-bottom-2"
+            className="mt-7 space-y-4 animate-in fade-in-0 slide-in-from-bottom-2"
             style={{ animationFillMode: 'backwards', animationDuration: '400ms', animationDelay: '100ms' }}
           >
             <Input
@@ -126,7 +117,7 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="nama@company.com"
+              placeholder="budi.santoso@company.co.id"
               required
             />
 
@@ -135,9 +126,19 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Masukkan password"
+              placeholder="••••••••••••"
               required
             />
+
+            <div className="flex items-center justify-between text-xs pt-1">
+              <label className="flex items-center gap-2 cursor-pointer text-muted-foreground hover:text-foreground">
+                <input type="checkbox" className="rounded border-border text-[#10B981] focus:ring-[#10B981]" />
+                <span>Ingat saya</span>
+              </label>
+              <span className="text-[#0EA5E9] hover:underline cursor-pointer">
+                Lupa password?
+              </span>
+            </div>
 
             {error && (
               <div
@@ -148,12 +149,35 @@ export default function LoginPage() {
               </div>
             )}
 
-            <Button type="submit" disabled={loading} className="w-full" size="lg">
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-[#10B981] hover:bg-[#059669] text-white font-semibold shadow-elev-sm transition-all"
+              size="lg"
+            >
               {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Masuk'}
             </Button>
+
+            <div className="relative my-6 text-center text-xs text-muted-foreground">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border/60" />
+              </div>
+              <span className="relative bg-background px-3 font-medium">atau masuk dengan</span>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full gap-2 border-border/80 hover:bg-muted/50 font-medium text-xs h-10"
+              onClick={() => {
+                setEmail('hr@company.com');
+                setPassword('123456');
+              }}
+            >
+              <ShieldCheck className="w-4 h-4 text-[#0EA5E9]" />
+              <span>SSO Perusahaan (Demo HR)</span>
+            </Button>
           </form>
-
-
         </div>
       </div>
     </div>

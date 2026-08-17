@@ -14,7 +14,8 @@ import {
   TrendingUp,
   AlertTriangle,
   DollarSign,
-  Receipt,
+  Fingerprint,
+  Wallet,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatCard } from '@/components/ui/stat-card';
@@ -182,10 +183,10 @@ export function EmployeeBento() {
       {/* Mobile & Desktop Quick Menu Shortcuts */}
       <div className="grid grid-cols-4 gap-2 sm:gap-3">
         {[
-          { label: 'Presensi', href: '/employee/attendance', icon: Camera, color: 'bg-primary/10 text-primary' },
+          { label: 'Presensi', href: '/employee/attendance', icon: Fingerprint, color: 'bg-primary/10 text-primary' },
           { label: 'Cuti / Izin', href: '/employee/leave', icon: CalendarDays, color: 'bg-info/10 text-info' },
           { label: 'Slip Gaji', href: '/employee/payroll', icon: DollarSign, color: 'bg-success/10 text-success' },
-          { label: 'Klaim', href: '/employee/reimbursement', icon: Receipt, color: 'bg-warning/10 text-warning' },
+          { label: 'Klaim', href: '/employee/reimbursement', icon: Wallet, color: 'bg-warning/10 text-warning' },
         ].map((item) => (
           <Link key={item.href} href={item.href}>
             <Card className="hover:shadow-elev-md hover:-translate-y-0.5 transition-all cursor-pointer h-full border border-border/80">

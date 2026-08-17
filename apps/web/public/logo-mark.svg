@@ -1,0 +1,20 @@
+<svg width="512" height="512" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="smartHrmsCyanGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="55%" stop-color="#0EA5E9"/>
+      <stop offset="100%" stop-color="#0284C7"/>
+    </linearGradient>
+    <linearGradient id="smartHrmsGreenGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34D399"/>
+      <stop offset="50%" stop-color="#10B981"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+  </defs>
+  <!-- 1. Head: Circular Dot -->
+  <circle cx="45" cy="18" r="9.5" fill="url(#smartHrmsCyanGrad)"/>
+  <!-- 2. Upper Swoosh (Cyan 'S' upper ribbon) -->
+  <path d="M 18 45 C 18 35, 28 29, 44 29 C 62 29, 78 36, 83 46 C 86 52, 83 58, 76 61 C 65 65, 50 63, 38 56 C 26 49, 18 52, 18 45 Z" fill="url(#smartHrmsCyanGrad)"/>
+  <!-- 3. Lower Swoosh (Emerald Green 'S' lower ribbon) -->
+  <path d="M 18 75 C 18 66, 32 56, 50 52 C 66 48, 80 53, 85 63 C 89 71, 84 79, 72 85 C 58 93, 38 94, 27 88 C 20 84, 18 79, 18 75 Z" fill="url(#smartHrmsGreenGrad)"/>
+</svg>

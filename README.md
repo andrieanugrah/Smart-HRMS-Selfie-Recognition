@@ -2,10 +2,10 @@
 
 # 🏢 Smart HRMS & Selfie Recognition
 
-### Next-Gen Enterprise Human Resource Management System with AI Biometrics & Geofencing
+### Next-Gen Enterprise Human Resource Management System with AI Biometrics, Geofencing & Performance Optimization
 
 [![CI Pipeline](https://github.com/andrieanugrah/Smart-HRMS-Selfie-Recognition/actions/workflows/ci.yml/badge.svg)](https://github.com/andrieanugrah/Smart-HRMS-Selfie-Recognition/actions/workflows/ci.yml)
-[![Next.js](https://img.shields.io/badge/Next.js-16.0-black?logo=next.js&logoColor=white)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16.2-black?logo=next.js&logoColor=white)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.0-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Express](https://img.shields.io/badge/Express.js-5.0-000000?logo=express&logoColor=white)](https://expressjs.com/)
@@ -25,6 +25,29 @@
 ### 📌 System Overview
 
 **Smart HRMS & Selfie Recognition** is a production-grade, enterprise Human Resource Management System engineered with modern web technologies. It combines client-side AI biometric facial recognition, real-time geolocation radius validation, atomic leave and overtime approval workflows, and instant WebSocket notifications into a unified monorepo application.
+
+---
+
+### ⚡ Performance, SSR & SEO Architecture
+
+The system has undergone a full senior-level fullstack audit and optimization suite to achieve top-tier Core Web Vitals, optimal SEO indexing, and minimal initial JavaScript bundle size.
+
+#### 🎯 Key Performance Optimizations
+1. **Dynamic Code Splitting & Dynamic Imports**:
+   - **XLSX Module Lazy Loading**: The ~500KB `xlsx` spreadsheet generation engine is lazily fetched (`await import('xlsx')`) only when an export is triggered.
+   - **Face-API Lazy Loading**: `face-api.js` and TensorFlow model weights are loaded dynamically on demand during camera initialization, keeping initial entry bundles ultra-lean.
+   - **Isolated Canvas/Recharts Charting**: Client-side window dependent charting (`recharts`) is dynamically imported (`ssr: false`), preventing hydration mismatches and rendering stalls.
+2. **SSR & Streaming Hydration**:
+   - Dashboard layouts (`HRDBento` & `EmployeeBento`) render via Server-Side Rendering (SSR) for instant first contentful paint (FCP), avoiding full-page client skeleton blinks.
+3. **SEO Engine & PWA Compliance**:
+   - Dynamic `robots.ts` route emitting `/robots.txt`.
+   - Dynamic `sitemap.ts` generator emitting `/sitemap.xml`.
+   - Dynamic `manifest.ts` creating `/manifest.webmanifest` for mobile PWA readiness.
+   - Structured metadata with OpenGraph, Twitter Cards, keywords, and dynamic page title templates.
+4. **Bundle & Package Tree-Shaking**:
+   - Next.js `optimizePackageImports` configured for Lucide, Radix UI, Date-fns, Framer Motion, and Phosphor Icons.
+   - HTTP Security Headers (X-Frame-Options, X-Content-Type-Options, Referrer-Policy) and Brotli compression enabled.
+   - Production console logging stripping enabled.
 
 ---
 
@@ -74,7 +97,7 @@ Smart-HRMS-Selfie-Recognition/
 │   ├── web/                     # Next.js 16 Frontend App Router (Port 3000)
 │   │   ├── public/models/       # face-api.js TensorFlow weight shards & manifests
 │   │   └── src/
-│   │       ├── app/             # App Router pages ([portal], actions, api)
+│   │       ├── app/             # App Router pages, metadata, robots, sitemap
 │   │       ├── components/      # UI components (Radix UI, Tailwind v4, Lucide)
 │   │       └── lib/             # Face API engine, crypto, hooks, Supabase clients
 │   └── server/                  # Express + Socket.io Sidecar Server (Port 5000)
@@ -105,7 +128,7 @@ Smart-HRMS-Selfie-Recognition/
 - **Selfie Proof Audit Logs**: Review clock-in/out selfie photo proof, match confidence percentage, and timestamps.
 - **Atomic Approval Management**: Process leave and overtime requests with race-condition prevention and instant status emission.
 - **Employee Administration**: Manage user roles, departments, employment status, and trigger facial descriptor resets.
-- **Exportable Payroll & Reports**: Generate audit logs, department summaries, and employee payslips.
+- **Exportable Payroll & Reports**: Generate audit logs, department summaries, and employee payslips (XLSX lazy export).
 
 ---
 
@@ -206,6 +229,26 @@ npm run lint         # Executes Next.js linting across apps/web
 ### 📌 Ringkasan Sistem
 
 **Smart HRMS & Selfie Recognition** adalah sistem informasi manajemen sumber daya manusia (HRMS) tingkat enterprise. Aplikasi ini mengintegrasikan presensi wajah berbasis AI pada sisi klien (*client-side AI biometrics*), validasi radius lokasi geofencing secara real-time, manajemen cuti & lembur dengan transaksi atomik, serta notifikasi instan berbasis WebSocket dalam arsitektur monorepo modern.
+
+---
+
+### ⚡ Audit Performa & Optimasi SEO/SSR
+
+Sistem telah diaudit secara menyeluruh oleh Senior Fullstack Developer untuk mencapai performa Core Web Vitals optimal dan kesiapan rilis produk:
+
+1. **Optimasi Bundle & Dynamic Import**:
+   - Modul `xlsx` (~500KB) di-load secara *lazy/async* saat user mengunduh laporan.
+   - Pustaka `face-api.js` dan bobot model TensorFlow hanya diunduh saat kamera presensi aktif.
+   - Komponen chart visualizer (`recharts`) diisolasi dengan *dynamic import* untuk mencegah kendala window SSR.
+2. **SSR Layout & Rendering Fast Paint**:
+   - Layout dashboard (`HRDBento` & `EmployeeBento`) menggunakan *Server-Side Rendering* (SSR) untuk First Contentful Paint (FCP) yang instan.
+3. **Mesin SEO & Kesiapan PWA**:
+   - Generasi otomatis `robots.txt` via `robots.ts`.
+   - Generasi otomatis `sitemap.xml` via `sitemap.ts`.
+   - Metadata PWA `/manifest.webmanifest` via `manifest.ts`.
+   - Metadata lengkap OpenGraph & Twitter Cards pada seluruh halaman.
+4. **HTTP Security Headers & Compression**:
+   - Integrasi HTTP security headers (X-Frame-Options, X-Content-Type-Options, Referrer-Policy) dan kompresi gzip/brotli.
 
 ---
 

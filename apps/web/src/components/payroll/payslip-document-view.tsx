@@ -3,6 +3,7 @@
 import { Printer, ArrowLeft, CheckCircle, Building2, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Logo } from '@/components/shared/logo';
 import type { Payroll } from 'shared';
 
 interface PayslipDocumentViewProps {
@@ -63,29 +64,23 @@ export function PayslipDocumentView({ payroll, onBack }: PayslipDocumentViewProp
 
       {/* Full Document Card Container */}
       <Card id="printable-payslip" className="p-4 sm:p-10 space-y-6 sm:space-y-8 bg-card border border-border/80 shadow-elev-md">
-        {/* Company & Header Section */}
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-border pb-6">
-          <div>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl gradient-brand flex items-center justify-center text-white font-extrabold text-sm shadow-elev-glow">
-                HR
-              </div>
-              <div>
-                <h1 className="text-xl font-extrabold tracking-tight text-foreground">
-                  PT SMART HRMS INDONESIA
-                </h1>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Gedung Utama Lt. 5, Jl. Jend. Sudirman No. 88, Jakarta Selatan
-                </p>
-              </div>
+        {/* Company & Header Section (1:1 Print Header Layout) */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 border-b border-border pb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+            <Logo size="lg" />
+            <div className="hidden sm:block w-px h-12 bg-border" />
+            <div className="text-xs text-muted-foreground space-y-0.5">
+              <p className="font-bold text-foreground text-sm">PT Smart Solusi Teknologi</p>
+              <p>Jl. Teknologi No. 88, Bandung 40111</p>
+              <p>(022) 1234 5678 &nbsp;|&nbsp; www.smarthrms.co.id</p>
             </div>
           </div>
 
           <div className="sm:text-right">
-            <span className="inline-block text-xs uppercase tracking-widest px-3 py-1 rounded-full bg-primary/10 text-primary font-bold">
-              SLIP GAJI DIGITAL
+            <span className="inline-block text-[11px] uppercase tracking-widest px-3 py-1 rounded-full bg-[#10B981]/15 text-[#10B981] font-bold border border-[#10B981]/25">
+              SLIP GAJI RESMI
             </span>
-            <p className="text-base font-bold text-foreground mt-2">
+            <p className="text-sm font-bold text-foreground mt-1.5">
               PERIODE {monthLabel.toUpperCase()} {payroll.year}
             </p>
           </div>

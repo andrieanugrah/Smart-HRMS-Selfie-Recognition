@@ -10,7 +10,7 @@ import {
   Clock,
   AlertTriangle,
   CalendarDays,
-  Camera,
+  Fingerprint,
   FileText,
   UserCheck,
   ArrowRight,
@@ -40,7 +40,7 @@ const AttendanceTrendChart = dynamic(
 
 const QUICK_LINKS = [
   { icon: UserCheck, label: 'Kelola Karyawan', href: '/hrd/employees', accent: 'primary' },
-  { icon: Camera, label: 'Data Presensi', href: '/hrd/attendance', accent: 'info' },
+  { icon: Fingerprint, label: 'Data Presensi', href: '/hrd/attendance', accent: 'info' },
   { icon: CalendarDays, label: 'Approval Cuti', href: '/hrd/leave', accent: 'success' },
   { icon: Timer, label: 'Approval Lembur', href: '/hrd/overtime', accent: 'warning' },
 ] as const;

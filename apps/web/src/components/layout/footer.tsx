@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
   SquaresFour,
-  Camera,
+  Fingerprint,
   CalendarCheck,
   Clock,
   User,
@@ -27,7 +27,7 @@ interface NavTab {
 const employeeTabs: NavTab[] = [
   { href: '/employee/dashboard', label: 'Home', icon: SquaresFour },
   { href: '/employee/leave', label: 'Cuti', icon: CalendarCheck },
-  { href: '/employee/attendance', label: 'Absen', icon: Camera, isMain: true },
+  { href: '/employee/attendance', label: 'Absen', icon: Fingerprint, isMain: true },
   { href: '/employee/overtime', label: 'Lembur', icon: Clock },
   { href: '/employee/profile', label: 'Profil', icon: User },
 ];
@@ -35,7 +35,7 @@ const employeeTabs: NavTab[] = [
 const hrdTabs: NavTab[] = [
   { href: '/hrd/dashboard', label: 'Home', icon: SquaresFour },
   { href: '/hrd/leave', label: 'Cuti', icon: CalendarCheck },
-  { href: '/hrd/attendance', label: 'Absensi', icon: Camera, isMain: true },
+  { href: '/hrd/attendance', label: 'Absensi', icon: Fingerprint, isMain: true },
   { href: '/hrd/overtime', label: 'Lembur', icon: Clock },
   { href: '/hrd/employees', label: 'Karyawan', icon: Users },
 ];

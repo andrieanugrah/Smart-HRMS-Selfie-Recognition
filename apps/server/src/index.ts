@@ -15,6 +15,9 @@ const httpServer = createServer(app);
 
 const io = new Server(httpServer, {
   cors: { origin: env.corsOrigin, methods: ['GET', 'POST'] },
+  pingTimeout: 20000,
+  pingInterval: 25000,
+  perMessageDeflate: true,
 });
 
 app.use(cors({ origin: env.corsOrigin }));

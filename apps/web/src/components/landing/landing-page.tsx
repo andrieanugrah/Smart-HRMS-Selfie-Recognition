@@ -5,6 +5,7 @@ import { Activity, ArrowUpRight, BarChart3, CalendarCheck, Camera, Camera as Cam
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/shared/theme-toggle';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Logo } from '@/components/shared/logo';
 import { LandingFooter } from './landing-footer';
 
 const HERO_HIGHLIGHTS = ['Verifikasi on-device', 'Cocok untuk tim HRD', 'Siap dipakai hari ini'];
@@ -33,7 +34,7 @@ function HeroPreview() {
 
 export function LandingPage({ year }: { year: number }) {
   return <div className="min-h-screen bg-background text-foreground">
-    <nav className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/60"><div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 h-16"><Link href="/" className="flex items-center gap-2.5"><div className="w-8 h-8 rounded-lg gradient-brand flex items-center justify-center shadow-elev-sm"><span className="text-white font-bold text-xs tracking-tight">HR</span></div><span className="font-semibold text-foreground tracking-tight">Smart HRMS</span><span className="hidden sm:inline-flex items-center rounded-md border border-border bg-muted px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Beta</span></Link><div className="flex items-center gap-2"><ThemeToggle /><Button asChild size="sm"><Link href="/login">Masuk</Link></Button></div></div></nav>
+    <nav className="sticky top-0 z-40 bg-background/80 backdrop-blur-xl border-b border-border/60"><div className="max-w-6xl mx-auto flex items-center justify-between px-4 sm:px-6 h-16"><Link href="/" className="flex items-center gap-2.5"><Logo size="sm" showTagline /><span className="hidden sm:inline-flex items-center rounded-md border border-border bg-muted px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wider text-muted-foreground">v2.0</span></Link><div className="flex items-center gap-2"><ThemeToggle /><Button asChild size="sm"><Link href="/login">Masuk</Link></Button></div></div></nav>
 
     <section className="px-4 sm:px-6 pt-12 sm:pt-16 pb-12 sm:pb-16"><div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-10 md:gap-8 items-center"><div className="md:col-span-7 space-y-5"><p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">HRMS · Indonesia</p><h1 className="text-[2.5rem] sm:text-5xl md:text-6xl font-semibold tracking-tighter leading-[1.05] text-foreground text-balance">Presensi wajah, cuti, dan lembur <span className="text-primary">dalam satu platform.</span></h1><p className="text-base sm:text-lg text-muted-foreground leading-relaxed max-w-[58ch]">Smart HRMS menggabungkan verifikasi wajah, alur approval, dan laporan untuk tim HRD Indonesia.</p><div className="flex flex-wrap items-center gap-3"><Button asChild variant="gradient" size="xl" className="gap-1.5"><Link href="/login">Masuk ke aplikasi <ArrowUpRight className="w-4 h-4" /></Link></Button><Button asChild variant="ghost" size="xl"><a href="#fitur">Lihat fitur inti</a></Button></div><p className="text-xs text-muted-foreground">Cocok untuk tim 50–500 orang · tanpa instalasi tambahan</p></div><div className="md:col-span-5"><HeroPreview /></div></div></section>
 

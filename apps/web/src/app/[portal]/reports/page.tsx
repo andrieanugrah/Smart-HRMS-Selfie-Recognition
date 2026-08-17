@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { Download, Printer, FileSpreadsheet, FileText } from 'lucide-react';
 import { toast } from 'sonner';
-import * as XLSX from 'xlsx';
 import { format } from 'date-fns';
 import { id as idLocale } from 'date-fns/locale';
 import { PageTransition } from '@/components/shared/page-transition';
@@ -29,10 +28,11 @@ export default function ReportsPage() {
   async function exportXLSX(kind: ReportKind) {
     try {
       setBusy(kind);
+      const XLSX = await import('xlsx');
       const fromStr = from ? from.toISOString().split('T')[0] : undefined;
       const toStr = to ? to.toISOString().split('T')[0] : undefined;
       const rows = await loadRows(kind, fromStr, toStr);
-      const sheet = buildSheet(kind, rows);
+      const sheet = buildSheet(XLSX, kind, rows);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, sheet, kind);
       const stamp = format(new Date(), 'yyyy-MM-dd');
@@ -193,7 +193,7 @@ async function loadRows(kind: ReportKind, from?: string, to?: string) {
   return await listAllOvertimes(undefined, from, to);
 }
 
-function buildSheet(kind: ReportKind, rows: any[]) {
+function buildSheet(XLSX: any, kind: ReportKind, rows: any[]) {
   if (kind === 'attendance') {
     const data = rows.map((r) => ({
       Tanggal: r.date,

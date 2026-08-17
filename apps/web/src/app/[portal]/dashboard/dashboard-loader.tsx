@@ -1,27 +1,11 @@
-'use client';
-
-import dynamic from 'next/dynamic';
+import { HRDBento } from './hrd-bento';
+import { EmployeeBento } from './employee-bento';
 import { Skeleton } from '@/components/ui/skeleton';
-
-const HRDBento = dynamic(
-  () => import('./hrd-bento').then((m) => m.HRDBento),
-  {
-    ssr: false,
-    loading: () => <DashboardSkeleton />,
-  }
-);
-
-const EmployeeBento = dynamic(
-  () => import('./employee-bento').then((m) => m.EmployeeBento),
-  {
-    ssr: false,
-    loading: () => <DashboardSkeleton />,
-  }
-);
 
 export function DashboardLoader({ isHrd }: { isHrd: boolean }) {
   return isHrd ? <HRDBento /> : <EmployeeBento />;
 }
+
 
 export function DashboardSkeleton() {
   return (
