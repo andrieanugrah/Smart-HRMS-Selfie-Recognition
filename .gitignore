@@ -1,16 +1,57 @@
+# Dependencies
 node_modules/
+.pnpm-store/
+
+# Build & Compilation Outputs
 .next/
 dist/
+build/
+out/
+*.tsbuildinfo
+
+# Environment & Secrets (NEVER COMMIT SENSITIVE KEYS)
 .env
 .env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
+
+# Logs & Debugging
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Operating System & Cache Files
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
-# Temporary scripts & HTML dumps
-*.ps1
+# Temporary & Dump Files
+*.tmp
+*.temp
 dump.html
+*.ps1
 
-# IDE & AI Tool folders
+# Coverage & Test Output
+coverage/
+.nyc_output/
+
+# IDE & Editor Configurations
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-project
+*.sublime-workspace
+
+# AI Agent & Assistant Workspace Folders
 .claude/
 .clinerules/
 .commandcode/
@@ -18,4 +59,3 @@ dump.html
 .opencode/
 .windsurf/
 .zcode/
-
