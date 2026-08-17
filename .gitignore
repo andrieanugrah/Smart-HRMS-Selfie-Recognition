@@ -59,3 +59,9 @@ coverage/
 .opencode/
 .windsurf/
 .zcode/
+anti-slop/
+
+# Raw Design Assets (use SVG in public/ instead)
+*.psd
+*.ai
+*.sketch
